@@ -125,6 +125,15 @@ Conectada igual que Cartera y Bases: ruta `/solicitudes/` en `gateway/nginx.conf
 2. Azure: registrar ese `AZURE_REDIRECT_URI` como Redirect URI tipo "Web" en el App Registration (sin esto el login con Microsoft falla con `AADSTS50011`; el login por contraseña sigue funcionando).
 3. Gateway: definir `SOLICITUDES_UPSTREAM` (dominio público de Solicitudes, sin `https://`) **antes** de redeployar el gateway.
 
+## Centro de Aplicaciones Comerciales
+
+Conectada igual que Cartera: ruta `/comercial/` en `gateway/nginx.conf.template` (con `client_max_body_size 20m` por los PDF y Word que se suben) y tarjeta `disponible` en `gateway/src/apps.js`. La app se compila con `VITE_BASE_PATH=/comercial/`. La app vieja (`cac.aed-it.com`) sigue funcionando por su cuenta, sin pasar por el gateway.
+
+**Orden de despliegue en Coolify (importante):**
+1. App nueva: build-arg `VITE_BASE_PATH=/comercial/` y variables `FRONTEND_URL=https://portal.aed-it.com/comercial`, `CORS_ORIGIN=https://portal.aed-it.com`, `HUBSPOT_REDIRECT_URI=https://portal.aed-it.com/comercial/api/auth/hubspot/callback`; desplegar.
+2. HubSpot: registrar ese `HUBSPOT_REDIRECT_URI` como URL de redireccionamiento de la app (sin esto nadie puede entrar: el login con contraseña esta oculto).
+3. Gateway: definir `COMERCIAL_UPSTREAM` (dominio publico de la app, sin `https://`) **antes** de redeployar el gateway. Sin ella nginx no arranca y se cae todo el portal.
+
 ## Tarjetas bloqueadas y orden
 
 El orden de las tarjetas en `gateway/src/apps.js` es el de los proyectos de Coolify (sin el número). Una app con `estado: 'disponible'` y `bloqueada: true` sigue en "Disponibles" pero su tarjeta no abre la app ("Acceso bloqueado", sin enlace). Es solo la tarjeta: la ruta del gateway (`/solicitudes/`, `/bases/`) sigue activa y se puede entrar escribiendo la URL. Hoy están bloqueadas Solicitudes de Contratación y Bases Presupuestales. Para desbloquear una, borrar su línea `bloqueada: true`.

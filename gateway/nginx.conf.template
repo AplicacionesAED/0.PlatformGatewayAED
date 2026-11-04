@@ -162,6 +162,27 @@ server {
         proxy_cookie_path / /bases/;
     }
 
+    # --- Centro de Aplicaciones Comerciales ---
+    # Mismo patron que Cartera: COMERCIAL_UPSTREAM es el DOMINIO PUBLICO de la app en Coolify (sin https://). La app ya
+    # soporta el prefijo (build-arg VITE_BASE_PATH=/comercial/; la API queda en /comercial/api y el callback de HubSpot en
+    # /comercial/api/auth/hubspot/callback).
+    location /comercial/ {
+        # El PDF de cada cotizacion (~1-2 MB) y los Word de Documentacion (hasta 20 MB) llegan por multipart; el default de
+        # nginx (1 MB) daria 413.
+        client_max_body_size 20m;
+        # Aceptar una cotizacion sube el PDF a HubSpot y actualiza varios objetos: puede pasar de los 60 s por defecto.
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_pass https://${COMERCIAL_UPSTREAM}/;
+        proxy_http_version 1.1;
+        proxy_ssl_server_name on;
+        proxy_set_header Host ${COMERCIAL_UPSTREAM};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cookie_path / /comercial/;
+    }
+
     # --- Los demas proyectos se agregan aca con el mismo patron, uno por
     #     uno, a medida que se conecten al gateway (copiar el bloque de
     #     /cartera/, cambiar el nombre de la variable de upstream).

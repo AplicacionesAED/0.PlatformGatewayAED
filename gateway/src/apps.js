@@ -63,7 +63,8 @@ export const APPS = [
     area: 'Comercial',
     descripcion: 'Herramientas para la gestión comercial y de ventas.',
     icono: BriefcaseBusiness,
-    estado: 'proximamente',
+    estado: 'disponible',
+    href: '/comercial/',
   },
   {
     id: 'oliv',
