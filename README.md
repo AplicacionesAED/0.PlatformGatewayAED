@@ -134,6 +134,15 @@ Conectada igual que Cartera: ruta `/comercial/` en `gateway/nginx.conf.template`
 2. HubSpot: registrar ese `HUBSPOT_REDIRECT_URI` como URL de redireccionamiento de la app (sin esto nadie puede entrar: el login con contraseña esta oculto).
 3. Gateway: definir `COMERCIAL_UPSTREAM` (dominio publico de la app, sin `https://`) **antes** de redeployar el gateway. Sin ella nginx no arranca y se cae todo el portal.
 
+## SIGER
+
+Conectada igual que Cartera: ruta `/siger/` en `gateway/nginx.conf.template` (con `client_max_body_size 20m` por las fotos de evidencia) y tarjeta `disponible` en `gateway/src/apps.js`. La app se compila con `VITE_BASE_PATH=/siger/` y vive en el proyecto "9. SIGER" de Coolify (Dockerfile en la raíz del repo `9.Siger`, puerto 3001, con su propia base Postgres).
+
+**Orden de despliegue en Coolify (importante):**
+1. App: build-arg `VITE_BASE_PATH=/siger/` y variables `FRONTEND_URL=https://portal.aed-it.com/siger`, `CORS_ORIGIN=https://portal.aed-it.com`, `AZURE_REDIRECT_URI=https://portal.aed-it.com/siger/api/auth/azure/callback`; desplegar.
+2. Azure: registrar ese `AZURE_REDIRECT_URI` como Redirect URI tipo "Web" en el App Registration.
+3. Gateway: definir `SIGER_UPSTREAM` (dominio público de la app, sin `https://`) **antes** de redeployar el gateway. Sin ella nginx no arranca y se cae todo el portal.
+
 ## Tarjetas bloqueadas y orden
 
 El orden de las tarjetas en `gateway/src/apps.js` es el de los proyectos de Coolify (sin el número). Una app con `estado: 'disponible'` y `bloqueada: true` sigue en "Disponibles" pero su tarjeta no abre la app ("Acceso bloqueado", sin enlace). Es solo la tarjeta: la ruta del gateway (`/solicitudes/`, `/bases/`) sigue activa y se puede entrar escribiendo la URL. Hoy están bloqueadas Solicitudes de Contratación y Bases Presupuestales. Para desbloquear una, borrar su línea `bloqueada: true`.

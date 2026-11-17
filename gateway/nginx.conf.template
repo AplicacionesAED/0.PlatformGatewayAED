@@ -183,6 +183,26 @@ server {
         proxy_cookie_path / /comercial/;
     }
 
+    # --- SIGER (Sistema de Gestion de Residuos) ---
+    # Mismo patron que Cartera: SIGER_UPSTREAM es el DOMINIO PUBLICO de la app en Coolify (sin https://). La app ya
+    # soporta el prefijo (build-arg VITE_BASE_PATH=/siger/; la API queda en /siger/api y el callback de Microsoft en
+    # /siger/api/auth/azure/callback).
+    location /siger/ {
+        # Fotos de evidencia: hasta 3 por envio de 5 MB (multipart); el default de nginx (1 MB) daria 413.
+        client_max_body_size 20m;
+        # Cada foto se valida, se convierte y se sube a Google Drive: puede pasar de los 60 s por defecto.
+        proxy_read_timeout 300s;
+        proxy_send_timeout 300s;
+        proxy_pass https://${SIGER_UPSTREAM}/;
+        proxy_http_version 1.1;
+        proxy_ssl_server_name on;
+        proxy_set_header Host ${SIGER_UPSTREAM};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_cookie_path / /siger/;
+    }
+
     # --- Los demas proyectos se agregan aca con el mismo patron, uno por
     #     uno, a medida que se conecten al gateway (copiar el bloque de
     #     /cartera/, cambiar el nombre de la variable de upstream).

@@ -6,6 +6,7 @@ import {
   HardHat,
   BriefcaseBusiness,
   Building2,
+  Recycle,
 } from 'lucide-react';
 
 // Orden = el de los proyectos de Coolify (sin el numero). Para conectar una app: estado 'disponible' y su href
@@ -73,5 +74,14 @@ export const APPS = [
     descripcion: 'Gestión del proyecto OLIV.',
     icono: Building2,
     estado: 'proximamente',
+  },
+  {
+    id: 'siger',
+    nombre: 'SIGER',
+    area: 'Obra',
+    descripcion: 'Inspecciones de residuos en obra, hallazgos y seguimiento.',
+    icono: Recycle,
+    estado: 'disponible',
+    href: '/siger/',
   },
 ];
