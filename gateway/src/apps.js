@@ -10,10 +10,12 @@ import {
 } from 'lucide-react';
 
 // Orden = el de los proyectos de Coolify (sin el numero). Para conectar una app: estado 'disponible' y su href
-// (ver README.md). `bloqueada: true` deja la tarjeta en Disponibles pero sin enlace: la app sigue accesible por URL.
+// (ver README.md). `salud`: healthcheck de la app por el gateway (sin el, la tarjeta no muestra estado en vivo).
+// `bloqueada: true` deja la tarjeta en Disponibles pero sin enlace: la app sigue accesible por URL.
 export const APPS = [
   {
     id: 'solicitudes',
+    salud: '/solicitudes/health',
     acento: '#232bed',
     nombre: 'Solicitudes de Contratación',
     area: 'Contratación',
@@ -24,6 +26,7 @@ export const APPS = [
   },
   {
     id: 'cartera',
+    salud: '/cartera/api/health',
     acento: '#0f8f8a',
     nombre: 'Cartera',
     area: 'Finanzas',
@@ -44,6 +47,7 @@ export const APPS = [
   },
   {
     id: 'bases',
+    salud: '/bases/health',
     acento: '#3b6ea5',
     nombre: 'Bases Presupuestales',
     area: 'Finanzas',
@@ -64,6 +68,7 @@ export const APPS = [
   },
   {
     id: 'comerciales',
+    salud: '/comercial/health',
     acento: '#0b2d4d',
     nombre: 'Centro de Aplicaciones Comerciales',
     area: 'Comercial',
@@ -83,6 +88,7 @@ export const APPS = [
   },
   {
     id: 'siger',
+    salud: '/siger/health',
     acento: '#1a8a4a',
     nombre: 'SISGER',
     area: 'Obra',

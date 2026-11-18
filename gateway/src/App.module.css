@@ -25,15 +25,54 @@
   mask-image: linear-gradient(180deg, #000 0%, transparent 92%);
 }
 
-/* Brillos del degradado de marca. */
+/* Velo azul marino sobre las fotos (texto legible a la izquierda) y brillos del degradado de marca. */
 .top::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
   background:
-    radial-gradient(640px 360px at 88% -8%, color-mix(in srgb, var(--color-primary) 70%, transparent), transparent 70%),
-    radial-gradient(520px 320px at 6% 108%, color-mix(in srgb, var(--color-gradient-mid) 45%, transparent), transparent 70%);
+    radial-gradient(520px 320px at 6% 108%, color-mix(in srgb, var(--color-gradient-mid) 40%, transparent), transparent 70%),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-brand-deep) 96%, transparent) 0%,
+      color-mix(in srgb, var(--color-brand-deep) 80%, transparent) 45%,
+      color-mix(in srgb, var(--color-brand-deep) 25%, transparent) 100%),
+    linear-gradient(0deg, color-mix(in srgb, var(--color-brand-deep) 70%, transparent), transparent 40%);
+}
+
+/* Fotos de proyectos: fundido cruzado con acercamiento lento. */
+.fotos {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+}
+
+.fotos img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  object-fit: cover;
+  opacity: 0;
+  transform: scale(1.06);
+  transition:
+    opacity 1400ms ease,
+    transform 8000ms linear;
+}
+
+.fotos .fotoOn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.fecha {
+  margin-left: auto;
+  font-size: var(--text-data-size);
+  color: color-mix(in srgb, #fff 72%, transparent);
+}
+
+.fecha::first-letter {
+  text-transform: uppercase;
 }
 
 .header {
@@ -124,6 +163,13 @@
   color: #fff;
 }
 
+.titleAccent {
+  background: linear-gradient(90deg, #9fb8ff 0%, #5fd8cf 45%, var(--color-gradient-end) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
 .lead {
   max-width: 54ch;
   font-size: 1.0625rem;
@@ -147,10 +193,29 @@
   pointer-events: none;
 }
 
+.kbd {
+  position: absolute;
+  right: 14px;
+  min-width: 24px;
+  padding: 2px 7px;
+  border: 1px solid var(--color-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 6px;
+  font: 600 var(--text-label-size) / 1.4 var(--font-mono);
+  text-align: center;
+  color: var(--color-ink-muted);
+  pointer-events: none;
+}
+
+.search input:focus + .kbd,
+.search input:not(:placeholder-shown) + .kbd {
+  display: none;
+}
+
 .search input {
   width: 100%;
   height: 52px;
-  padding: 0 16px 0 48px;
+  padding: 0 48px 0 48px;
   border: 1px solid transparent;
   border-radius: var(--radius-md);
   background: #fff;
@@ -201,7 +266,110 @@
   letter-spacing: -0.03em;
 }
 
+.heroFoot {
+  width: 100%;
+  max-width: 1240px;
+  margin: var(--space-xl) auto 0;
+  padding-inline: var(--space-lg);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-md);
+}
+
+.pie {
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, #fff 70%, transparent);
+}
+
+.puntos {
+  display: flex;
+  gap: 6px;
+}
+
+/* Área de toque de 24 px con la barra visible dentro. */
+.puntos button {
+  position: relative;
+  width: 28px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.puntos button::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 3px;
+  background: color-mix(in srgb, #fff 35%, transparent);
+  transition: background var(--duration-standard) var(--ease-standard);
+}
+
+.puntos .puntoOn::after {
+  background: var(--color-gradient-end);
+}
+
 /* ---------- Catálogo ---------- */
+
+.recientes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.recientesTitulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+}
+
+.reciente {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: #fff;
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  color: var(--color-ink);
+  transition:
+    border-color var(--duration-standard) var(--ease-standard),
+    transform var(--duration-standard) var(--ease-standard);
+}
+
+.reciente:hover {
+  border-color: var(--acento);
+  transform: translateY(-1px);
+}
+
+.recienteIcono {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--acento);
+  color: #fff;
+}
 
 .main {
   flex: 1;
@@ -310,6 +478,22 @@
   cursor: pointer;
 }
 
+/* Luz que sigue al cursor (--mx/--my desde App.jsx). */
+.cardLive::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 0%), color-mix(in srgb, var(--acento) 12%, transparent), transparent 65%);
+  transition: opacity var(--duration-standard) var(--ease-standard);
+}
+
+.cardLive:hover::before {
+  opacity: 1;
+}
+
 .cardLive:hover {
   transform: translateY(-3px);
   border-color: color-mix(in srgb, var(--acento) 45%, var(--color-border));
@@ -375,11 +559,32 @@
   color: var(--color-warning-ink);
 }
 
+.badgeDown {
+  color: var(--color-danger-ink);
+}
+
 .dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
   background: #16a34a;
+}
+
+.badgeDown .dot {
+  background: var(--color-danger-ink);
+}
+
+.dotPulse {
+  animation: pulso 2s ease-out infinite;
+}
+
+@keyframes pulso {
+  0% {
+    box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 7px rgba(22, 163, 74, 0);
+  }
 }
 
 .cardBody {
@@ -452,6 +657,76 @@
   color: var(--color-ink-muted);
 }
 
+/* ---------- Proyectos AED ---------- */
+
+.proyectos {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-brand-deep);
+  color: #fff;
+}
+
+.proyectos::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(480px 260px at 100% 0%, color-mix(in srgb, var(--color-primary) 55%, transparent), transparent 70%),
+    linear-gradient(color-mix(in srgb, #fff 6%, transparent) 1px, transparent 1px) 0 0 / 56px 56px,
+    linear-gradient(90deg, color-mix(in srgb, #fff 6%, transparent) 1px, transparent 1px) 0 0 / 56px 56px;
+}
+
+.proyectosInner {
+  position: relative;
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding: 56px var(--space-lg);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-xl) var(--space-2xl);
+}
+
+.proyectosText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  max-width: 380px;
+}
+
+.proyectosTitulo {
+  font-size: clamp(1.375rem, 1.1rem + 1vw, 1.875rem);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.logos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-xl) 56px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.logos img {
+  height: 64px;
+  width: auto;
+  opacity: 0.85;
+  transition:
+    opacity var(--duration-standard) var(--ease-standard),
+    transform var(--duration-standard) var(--ease-standard);
+}
+
+.logos li:hover img {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
 .footer {
   display: flex;
   justify-content: space-between;
@@ -487,6 +762,19 @@
 
   .stats dd {
     font-size: 1.75rem;
+  }
+
+  .fecha {
+    display: none;
+  }
+
+  .heroFoot,
+  .proyectosInner {
+    padding-inline: 16px;
+  }
+
+  .logos img {
+    height: 48px;
   }
 
   .grid {

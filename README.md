@@ -36,7 +36,11 @@ si hace falta el razonamiento completo) — resumen:
 tokens, `Badge` y `Field` copiados de la plantilla de diseño compartida, ver `DESIGN.md`). El `Dockerfile` la compila y
 sirve el resultado con nginx, que además hace el ruteo por path. El catálogo
 de tarjetas vive en `gateway/src/apps.js`: para habilitar una app, cambiar su
-`estado` a `'disponible'` y poner su `href`. Cada app tiene su `acento` (color hex) que tiñe su tarjeta. Desarrollo: `cd gateway && npm
+`estado` a `'disponible'` y poner su `href`. Cada app tiene su `acento` (color hex) que tiñe su tarjeta y, si tiene `salud` (ruta de healthcheck por el
+gateway, ej. `/siger/health`), la tarjeta muestra "En línea" o "Sin respuesta" consultándola cada 60 s. La landing
+también guarda en `localStorage` las últimas apps abiertas ("Recientes"), enfoca la búsqueda con `/` y abre la primera
+coincidencia con Enter. Fotos del hero y logos de proyectos: `gateway/public/proyectos/` (WebP optimizados desde
+`visor-oliv-3d`, la landing de OLIV y los assets de Comercial y Cartera). Desarrollo: `cd gateway && npm
 install && npm run dev` (puerto 5190).
 
 ## Cómo se conecta una app nueva al gateway
