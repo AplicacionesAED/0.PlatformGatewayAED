@@ -39,11 +39,13 @@
     linear-gradient(0deg, color-mix(in srgb, var(--color-brand-deep) 70%, transparent), transparent 40%);
 }
 
-/* Fotos de proyectos: fundido cruzado con acercamiento lento. */
+/* Fotos de proyectos: fundido cruzado, siempre recortadas al recuadro del hero (sin escalar, para que ninguna capa
+   se salga del borde mientras cambia). */
 .fotos {
   position: absolute;
   inset: 0;
   z-index: -2;
+  overflow: hidden;
 }
 
 .fotos img {
@@ -54,15 +56,11 @@
   max-width: none;
   object-fit: cover;
   opacity: 0;
-  transform: scale(1.06);
-  transition:
-    opacity 1400ms ease,
-    transform 8000ms linear;
+  transition: opacity 1400ms ease;
 }
 
 .fotos .fotoOn {
   opacity: 1;
-  transform: scale(1);
 }
 
 .fecha {

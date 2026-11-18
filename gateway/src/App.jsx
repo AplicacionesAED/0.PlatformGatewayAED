@@ -60,8 +60,8 @@ function useAhora() {
   return ahora;
 }
 
-// Estado en vivo de cada app con `salud`: 'ok', 'caida' o undefined (sin dato: p. ej. en desarrollo, donde la ruta
-// devuelve el index.html de Vite y no JSON).
+// Estado en vivo de cada app con `salud`: 'ok', 'caida' o undefined (sin dato: p. ej. en desarrollo, donde Vite
+// responde 404 o HTML en vez de JSON).
 function useSalud() {
   const [salud, setSalud] = useState({});
   useEffect(() => {
@@ -71,7 +71,9 @@ function useSalud() {
         APPS.filter((a) => a.salud && a.estado === 'disponible').map(async (a) => {
           try {
             const r = await fetch(a.salud, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
-            if (!r.ok) return [a.id, 'caida'];
+            // 5xx = el gateway no llega a la app. Un 404 (p. ej. Vite en desarrollo) no dice nada: sin dato.
+            if (r.status >= 500) return [a.id, 'caida'];
+            if (!r.ok) return [a.id, undefined];
             const tipo = r.headers.get('content-type') || '';
             return [a.id, tipo.includes('json') ? 'ok' : undefined];
           } catch {
