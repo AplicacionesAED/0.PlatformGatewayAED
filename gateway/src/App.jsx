@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowUpRight, Clock, Lock, Search } from 'lucide-react';
+import { ArrowRight, Clock, Lock, Search } from 'lucide-react';
 import { APPS } from './apps.js';
 import styles from './App.module.css';
 
@@ -7,7 +7,7 @@ function normalizar(texto) {
   return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 }
 
-function AppCard({ app }) {
+function AppCard({ app, indice }) {
   const Icono = app.icono;
   const disponible = app.estado === 'disponible';
   // Bloqueada: figura como disponible pero la tarjeta no abre la app (se sigue pudiendo entrar por URL).
@@ -15,22 +15,22 @@ function AppCard({ app }) {
 
   const contenido = (
     <>
-      <div className={styles.cardTop}>
+      <div className={styles.cardMedia} aria-hidden="true">
         <span className={styles.icon}>
-          <Icono size={22} strokeWidth={1.8} aria-hidden="true" />
+          <Icono size={26} strokeWidth={1.7} />
         </span>
+        <span className={styles.area}>{app.area}</span>
         {disponible ? (
           <span className={`${styles.badge} ${styles.badgeLive}`}>
-            <span className={styles.dot} aria-hidden="true" /> Disponible
+            <span className={styles.dot} /> Disponible
           </span>
         ) : (
           <span className={`${styles.badge} ${styles.badgeSoon}`}>
-            <Clock size={12} strokeWidth={2.2} aria-hidden="true" /> Próximamente
+            <Clock size={12} strokeWidth={2.2} /> En desarrollo
           </span>
         )}
       </div>
       <div className={styles.cardBody}>
-        <span className={styles.area}>{app.area}</span>
         <h3 className={styles.cardTitle}>{app.nombre}</h3>
         <p className={styles.cardText}>{app.descripcion}</p>
       </div>
@@ -43,7 +43,7 @@ function AppCard({ app }) {
         ) : disponible ? (
           <>
             <span>Abrir aplicación</span>
-            <ArrowUpRight size={16} strokeWidth={2.2} className={styles.arrow} aria-hidden="true" />
+            <ArrowRight size={16} strokeWidth={2.2} className={styles.arrow} aria-hidden="true" />
           </>
         ) : (
           <span>En preparación</span>
@@ -52,15 +52,17 @@ function AppCard({ app }) {
     </>
   );
 
+  const estilo = { '--acento': app.acento, '--i': indice };
+
   if (disponible && !bloqueada) {
     return (
-      <a className={`${styles.card} ${styles.cardLive}`} href={app.href}>
+      <a className={`${styles.card} ${styles.cardLive}`} href={app.href} style={estilo}>
         {contenido}
       </a>
     );
   }
   return (
-    <div className={`${styles.card} ${styles.cardSoon}`} aria-disabled="true">
+    <div className={`${styles.card} ${styles.cardOff}`} style={estilo} aria-disabled="true">
       {contenido}
     </div>
   );
@@ -75,74 +77,105 @@ function Seccion({ titulo, apps }) {
         <span className={styles.count}>{apps.length}</span>
       </div>
       <div className={styles.grid}>
-        {apps.map((app) => (
-          <AppCard key={app.id} app={app} />
+        {apps.map((app, i) => (
+          <AppCard key={app.id} app={app} indice={i} />
         ))}
       </div>
     </section>
   );
 }
 
+const AREAS = [...new Set(APPS.map((a) => a.area))];
+
 export default function App() {
   const [busqueda, setBusqueda] = useState('');
+  const [area, setArea] = useState('Todas');
 
   const filtradas = useMemo(() => {
     const q = normalizar(busqueda.trim());
-    if (!q) return APPS;
-    return APPS.filter((a) => normalizar(`${a.nombre} ${a.area} ${a.descripcion}`).includes(q));
-  }, [busqueda]);
+    return APPS.filter(
+      (a) =>
+        (area === 'Todas' || a.area === area) &&
+        (!q || normalizar(`${a.nombre} ${a.area} ${a.descripcion}`).includes(q)),
+    );
+  }, [busqueda, area]);
 
   const disponibles = filtradas.filter((a) => a.estado === 'disponible');
   const proximamente = filtradas.filter((a) => a.estado !== 'disponible');
   const totalDisponibles = APPS.filter((a) => a.estado === 'disponible').length;
+  const totalDesarrollo = APPS.length - totalDisponibles;
 
   return (
     <>
-      <header className={styles.header}>
-        <div className={styles.headerInner}>
-          <img className={styles.logo} src={`${import.meta.env.BASE_URL}aed-logo.png`} alt="AED" />
-          <span className={styles.divider} aria-hidden="true" />
-          <span className={styles.product}>Plataforma</span>
-        </div>
-      </header>
+      <div className={styles.top}>
+        <header className={styles.header}>
+          <div className={styles.headerInner}>
+            <img className={styles.logo} src={`${import.meta.env.BASE_URL}aed-logo.png`} alt="AED" />
+            <span className={styles.divider} aria-hidden="true" />
+            <span className={styles.product}>Plataforma</span>
+          </div>
+        </header>
 
-      <main className={styles.main}>
         <section className={styles.hero}>
-          <h1 className={styles.title}>Aplicaciones de AED</h1>
-          <p className={styles.lead}>
-            Un único punto de entrada a cada módulo. Las nuevas aplicaciones se irán habilitando aquí a medida que
-            estén listas.
-          </p>
-
-          <div className={styles.toolbar}>
-            <label className={styles.search}>
-              <Search size={18} strokeWidth={2} aria-hidden="true" />
-              <input
-                type="search"
-                placeholder="Buscar aplicación…"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                aria-label="Buscar aplicación"
-              />
-            </label>
-            <div className={styles.stats}>
-              <span>
-                <strong>{totalDisponibles}</strong> disponible{totalDisponibles === 1 ? '' : 's'}
-              </span>
-              <span className={styles.statsSep} aria-hidden="true" />
-              <span>
-                <strong>{APPS.length - totalDisponibles}</strong> próximamente
-              </span>
+          <div className={styles.heroInner}>
+            <div className={styles.heroText}>
+              <span className={styles.eyebrow}>Ecosistema de software AED</span>
+              <h1 className={styles.title}>Las herramientas de AED, en un solo lugar.</h1>
+              <p className={styles.lead}>
+                Cada módulo del negocio, de la contratación a la obra, con un único punto de entrada. Elija una
+                aplicación para comenzar.
+              </p>
+              <label className={styles.search}>
+                <Search size={19} strokeWidth={2} aria-hidden="true" />
+                <input
+                  type="search"
+                  placeholder="Buscar aplicación…"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  aria-label="Buscar aplicación"
+                />
+              </label>
             </div>
+
+            <dl className={styles.stats}>
+              <div>
+                <dt>Aplicaciones activas</dt>
+                <dd>{totalDisponibles}</dd>
+              </div>
+              <div>
+                <dt>Áreas de negocio</dt>
+                <dd>{AREAS.length}</dd>
+              </div>
+              <div>
+                <dt>En desarrollo</dt>
+                <dd>{totalDesarrollo}</dd>
+              </div>
+            </dl>
           </div>
         </section>
+      </div>
+
+      <main className={styles.main}>
+        <div className={styles.filters} role="group" aria-label="Filtrar por área">
+          {['Todas', ...AREAS].map((a) => (
+            <button
+              key={a}
+              type="button"
+              className={`${styles.chip} ${area === a ? styles.chipOn : ''}`}
+              aria-pressed={area === a}
+              onClick={() => setArea(a)}
+            >
+              {a}
+            </button>
+          ))}
+        </div>
 
         {filtradas.length === 0 ? (
-          <p className={styles.empty}>No hay aplicaciones que coincidan con “{busqueda}”.</p>
+          <p className={styles.empty}>No hay aplicaciones que coincidan con la búsqueda.</p>
         ) : (
           <>
             <Seccion titulo="Disponibles" apps={disponibles} />
-            <Seccion titulo="Próximamente" apps={proximamente} />
+            <Seccion titulo="En desarrollo" apps={proximamente} />
           </>
         )}
       </main>

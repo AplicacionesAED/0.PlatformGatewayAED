@@ -14,6 +14,7 @@ import {
 export const APPS = [
   {
     id: 'solicitudes',
+    acento: '#232bed',
     nombre: 'Solicitudes de Contratación',
     area: 'Contratación',
     descripcion: 'Contratación directa e indirecta con flujo de aprobación.',
@@ -23,6 +24,7 @@ export const APPS = [
   },
   {
     id: 'cartera',
+    acento: '#0f8f8a',
     nombre: 'Cartera',
     area: 'Finanzas',
     descripcion: 'Seguimiento de cartera, cobros y estados de cuenta.',
@@ -32,6 +34,7 @@ export const APPS = [
   },
   {
     id: 'hrsm',
+    acento: '#c0551a',
     nombre: 'Recursos Humanos',
     area: 'Gestión humana',
     descripcion: 'Gestión del talento, personal y procesos de RR.HH.',
@@ -41,6 +44,7 @@ export const APPS = [
   },
   {
     id: 'bases',
+    acento: '#3b6ea5',
     nombre: 'Bases Presupuestales',
     area: 'Finanzas',
     descripcion: 'Construcción y control de bases de presupuesto de obra.',
@@ -51,6 +55,7 @@ export const APPS = [
   },
   {
     id: 'bitacora',
+    acento: '#6b7280',
     nombre: 'Bitácora de Obra',
     area: 'Obra',
     descripcion: 'Registro diario de avances, novedades y eventos en obra.',
@@ -59,6 +64,7 @@ export const APPS = [
   },
   {
     id: 'comerciales',
+    acento: '#0b2d4d',
     nombre: 'Centro de Aplicaciones Comerciales',
     area: 'Comercial',
     descripcion: 'Herramientas para la gestión comercial y de ventas.',
@@ -68,6 +74,7 @@ export const APPS = [
   },
   {
     id: 'oliv',
+    acento: '#5b6b7f',
     nombre: 'OLIV',
     area: 'Proyectos',
     descripcion: 'Gestión del proyecto OLIV.',
@@ -76,6 +83,7 @@ export const APPS = [
   },
   {
     id: 'siger',
+    acento: '#1a8a4a',
     nombre: 'SISGER',
     area: 'Obra',
     descripcion: 'Inspecciones de residuos en obra, hallazgos y seguimiento.',
