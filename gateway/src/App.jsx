@@ -5,11 +5,12 @@ import styles from './App.module.css';
 
 const BASE = import.meta.env.BASE_URL;
 
-// Fotos del hero: proyecto OLIV (montajes del visor 3D y render de la portería).
+// Fotos del hero: proyectos de AED, tomadas de aed.com.co (Todos los proyectos).
 const FOTOS = [
-  { src: `${BASE}proyectos/oliv-aereo.webp`, pie: 'OLIV · Cartagena' },
-  { src: `${BASE}proyectos/oliv-costa.webp`, pie: 'OLIV · Cartagena' },
-  { src: `${BASE}proyectos/oliv-porteria.webp`, pie: 'OLIV · Portería' },
+  { src: `${BASE}proyectos/baia-kabo.webp`, pie: 'Baía Kabo' },
+  { src: `${BASE}proyectos/kristal-blu.webp`, pie: 'Kristal Blu' },
+  { src: `${BASE}proyectos/vela-village.webp`, pie: 'Vela Village' },
+  { src: `${BASE}proyectos/matimba.webp`, pie: 'Matimbá Club & Spa' },
 ];
 
 const PROYECTOS = [
