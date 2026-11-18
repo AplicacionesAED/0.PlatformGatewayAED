@@ -145,7 +145,7 @@ Conectada igual que Cartera: ruta `/siger/` en `gateway/nginx.conf.template` (co
 
 ## Tarjetas bloqueadas y orden
 
-El orden de las tarjetas en `gateway/src/apps.js` es el de los proyectos de Coolify (sin el número). Una app con `estado: 'disponible'` y `bloqueada: true` sigue en "Disponibles" pero su tarjeta no abre la app ("Acceso bloqueado", sin enlace). Es solo la tarjeta: la ruta del gateway (`/solicitudes/`, `/bases/`) sigue activa y se puede entrar escribiendo la URL. Hoy están bloqueadas Solicitudes de Contratación y Bases Presupuestales. Para desbloquear una, borrar su línea `bloqueada: true`.
+El orden de las tarjetas en `gateway/src/apps.js` es el de los proyectos de Coolify (sin el número). Una app con `estado: 'disponible'` y `bloqueada: true` sigue en "Disponibles" pero su tarjeta no abre la app ("Acceso bloqueado", sin enlace). Es solo la tarjeta: la ruta del gateway (`/solicitudes/`, `/bases/`) sigue activa y se puede entrar escribiendo la URL. Hoy está bloqueada Bases Presupuestales (Solicitudes de Contratación se desbloqueó el 2026-11-18). Para desbloquear una, borrar su línea `bloqueada: true`.
 
 ## Diseño de la landing
 

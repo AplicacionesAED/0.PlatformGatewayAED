@@ -20,7 +20,6 @@ export const APPS = [
     icono: FileSignature,
     estado: 'disponible',
     href: '/solicitudes/',
-    bloqueada: true, // sigue disponible (la ruta funciona entrando por URL), pero la tarjeta no abre la app
   },
   {
     id: 'cartera',
