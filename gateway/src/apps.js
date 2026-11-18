@@ -76,7 +76,7 @@ export const APPS = [
   },
   {
     id: 'siger',
-    nombre: 'SIGER',
+    nombre: 'SISGER',
     area: 'Obra',
     descripcion: 'Inspecciones de residuos en obra, hallazgos y seguimiento.',
     icono: Recycle,
