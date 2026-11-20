@@ -131,6 +131,8 @@ Cada fase se puede desplegar sola y no rompe las anteriores. Ninguna app cambia 
 - Ruta `/portal/api/`, respaldo de SPA, variable `PORTAL_AUTH_UPSTREAM`, README actualizado. `auth_request` preparado pero apagado.
 - **Verificar:** build del contenedor en local con `docker compose`, rutas de las apps sin cambios, `/login` carga al refrescar la página.
 
+**Avance (2026-11-20):** código listo en el repositorio: bloque `/portal/` y respaldo de SPA en `gateway/nginx.conf.template`, build-arg `VITE_PORTAL_AUTH` en `gateway/Dockerfile`, y pasos de despliegue en el README. La variable `PORTAL_AUTH_UPSTREAM` ya está cargada en el recurso Gateway de Coolify (apunta al dominio de Portal Auth). `docker-compose.yml` no se tocó: ya estaba desactualizado respecto al `proxy_pass https://` y no lleva las variables de las demás apps. Pendiente: validar la sintaxis de nginx, `git push`, y los pasos de despliegue del README (Docker no corre en el equipo, así que nginx no se pudo probar en local).
+
 ### Fase 4 — Módulo `portalAuth` y piloto
 - Escribir el módulo, probarlo y aplicarlo primero a **SIGER** (ya usa Microsoft y vincula por correo), en `optional` y luego `required`. Después **Solicitudes**.
 - **Verificar:** entrar al portal y abrir la app sin pedir login; persona sin acceso rechazada; persona desactivada pierde acceso en menos de 1 hora; con `PORTAL_AUTH=off` vuelve el login anterior.

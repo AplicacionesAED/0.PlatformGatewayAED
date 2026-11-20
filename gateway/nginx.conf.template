@@ -61,6 +61,30 @@ server {
         include /etc/nginx/snippets/security-headers.conf;
     }
 
+    # Pantallas de la landing con ruta propia (SPA de React): login, cambio de contraseña y administracion. Sin esto nginx
+    # daria 404 al recargar /login o /admin, porque no son archivos. Solo sirven el index.html; los datos salen de /portal/api/.
+    location ~ ^/(login|cambiar-password|admin)(/|$) {
+        root /usr/share/nginx/html;
+        try_files /index.html =404;
+    }
+
+    # --- Login global del portal (servicio portal-auth, carpeta auth/) ---
+    # Mismo patron que las apps: PORTAL_AUTH_UPSTREAM es el DOMINIO PUBLICO del recurso "Portal Auth" en Coolify (sin
+    # https://). El servicio recibe /api/... (nginx quita el prefijo /portal). A diferencia de las apps NO se reescribe el
+    # path de las cookies: la de sesion (portal_session) debe valer en TODO el dominio para que la vean las apps, y la de
+    # renovacion ya trae su ruta (/portal/api/auth) puesta por el propio servicio (PORTAL_REFRESH_COOKIE_PATH).
+    # Sin PORTAL_AUTH_UPSTREAM definida, nginx no arranca (queda vacia en el proxy_pass): definirla ANTES de redeployar.
+    location /portal/ {
+        proxy_read_timeout 60s;
+        proxy_pass https://${PORTAL_AUTH_UPSTREAM}/;
+        proxy_http_version 1.1;
+        proxy_ssl_server_name on;
+        proxy_set_header Host ${PORTAL_AUTH_UPSTREAM};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
     # --- RR.HH. (HRMS) ---
     # HRMS_UPSTREAM es el DOMINIO PUBLICO que Coolify le asigna a HRMS (ej.
     # xxxxx.tu-servidor.sslip.io), NO un nombre de red interna de Docker --

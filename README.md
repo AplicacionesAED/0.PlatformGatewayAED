@@ -168,3 +168,11 @@ origen externo (CDN, iframe, Google Drive embebido), agregarlo ahi y redeployar 
 Ver `docs/PLAN-LOGIN-GLOBAL.md`. La landing ya trae el login, el cambio de contraseña y la administración de accesos (`gateway/src/auth`, `gateway/src/admin`), pero quedan **apagados** salvo que el build lleve `VITE_PORTAL_AUTH=true`: sin eso el portal es el de siempre. El servicio que los respalda vive en `auth/` (ver `auth/README.md`).
 
 Probarlo en local: servicio de login en `auth/` (`npm run dev`, puerto 3060, con su base y `PORTAL_REFRESH_COOKIE_PATH=/portal/api/auth`) y en `gateway/` `VITE_PORTAL_AUTH=true npm run dev`; Vite reenvía `/portal/api` al servicio. Las pruebas del servicio se corren en serie (`npm test` en `auth/`) porque comparten la base de pruebas.
+
+### Despliegue del login global en Coolify
+
+1. **Portal Auth** (recurso en el proyecto `0. GATEWAY`, Base Directory `/auth`): desplegarlo y comprobar `/health` y `/api/.well-known/jwks.json` en su dominio.
+2. **Gateway:** definir `PORTAL_AUTH_UPSTREAM` (dominio público de Portal Auth, sin `https://`) **antes** de redeployar; sin ella nginx no arranca y se cae todo el portal. El gateway reenvía `/portal/` a ese servicio y sirve `index.html` para `/login`, `/cambiar-password` y `/admin`.
+3. Con el login todavía apagado (sin build-arg), comprobar que `https://portal.aed-it.com/portal/api/.well-known/jwks.json` responde y que el portal sigue igual.
+4. Importar las personas actuales (`auth/scripts/importarUsuarios.js`, simulacro primero).
+5. Encender: build-arg `VITE_PORTAL_AUTH=true` en el gateway y redeploy. Para apagarlo, quitar el build-arg y redeployar.

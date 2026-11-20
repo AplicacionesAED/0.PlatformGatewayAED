@@ -6,6 +6,10 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm install
 COPY . .
+# Interruptor del login global (ver docs/PLAN-LOGIN-GLOBAL.md): con "true" el portal pide sesion y muestra solo las apps de cada
+# persona; vacio = portal publico como siempre. Vite lo incrusta al COMPILAR: se pasa como build-arg, no como variable de runtime.
+ARG VITE_PORTAL_AUTH=
+ENV VITE_PORTAL_AUTH=${VITE_PORTAL_AUTH}
 RUN npm run build
 
 # Etapa 2: imagen oficial de nginx. Cualquier archivo en
