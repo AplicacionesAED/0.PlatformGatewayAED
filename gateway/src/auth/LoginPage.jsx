@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { api } from '../api/client.js';
+import { APPS } from '../apps.js';
 import { Aviso, BotonIcono, Button, Campo } from '../components/ui.jsx';
 import { useAuth } from './AuthContext.jsx';
 import { destinoSeguro, esRutaDelPortal } from './destino.js';
@@ -31,6 +32,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const destino = destinoSeguro(params.get('next'));
+  // Si se llego pidiendo una app (/siger/...), se dice cual: asi el login no parece generico ni que la persona se perdio.
+  const appDestino = APPS.find((a) => a.href && destino.startsWith(a.href));
   const errorMicrosoft = ERRORES_MICROSOFT[params.get('error')] ?? (params.get('error') ? ERRORES_MICROSOFT.OAuthError : null);
 
   const [email, setEmail] = useState('');
@@ -60,7 +63,14 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthLayout titulo="Iniciar sesión" subtitulo="Entra con tu cuenta de AED o con tu correo y contraseña.">
+    <AuthLayout
+      titulo="Iniciar sesión"
+      subtitulo={
+        appDestino
+          ? `Para abrir ${appDestino.nombre}, entra con tu cuenta de AED o con tu correo y contraseña.`
+          : 'Entra con tu cuenta de AED o con tu correo y contraseña.'
+      }
+    >
       {errorMicrosoft && <Aviso>{errorMicrosoft}</Aviso>}
 
       <a className={s.microsoft} href={api.urlMicrosoft(destino)}>
