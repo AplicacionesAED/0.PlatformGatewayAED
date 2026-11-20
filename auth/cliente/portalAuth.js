@@ -65,16 +65,24 @@ async function resolverSesion(req, slug) {
   const token = req.cookies?.[COOKIE_SESION];
   if (!token) return { estado: 'sin-sesion' };
 
+  // Una cookie del portal que llega pero se rechaza deja su motivo en el log (sin datos de la persona): sin esto un fallo de verificacion
+  // seria indistinguible de "no ha iniciado sesion". Un token vencido es normal (la app renueva y reintenta), por eso no se registra.
+  const rechazar = (motivo) => {
+    console.warn(`[portalAuth] sesion del portal rechazada: ${motivo}`); // eslint-disable-line no-console
+    return { estado: 'sin-sesion' };
+  };
+
   let payload;
   try {
     const kid = jwt.decode(token, { complete: true })?.header?.kid;
-    const llave = kid ? await llavePara(kid) : null;
-    if (!llave) return { estado: 'sin-sesion' };
+    if (!kid) return rechazar('el token no trae kid');
+    const llave = await llavePara(kid);
+    if (!llave) return rechazar(`no hay llave publica para el kid "${kid}" (JWKS no disponible o llave rotada)`);
     payload = jwt.verify(token, llave, { algorithms: ['RS256'], issuer: ISSUER, audience: AUDIENCE });
-  } catch {
-    return { estado: 'sin-sesion' };
+  } catch (err) {
+    return err.name === 'TokenExpiredError' ? { estado: 'sin-sesion' } : rechazar(err.message);
   }
-  if (payload.type !== 'access' || typeof payload.email !== 'string') return { estado: 'sin-sesion' };
+  if (payload.type !== 'access' || typeof payload.email !== 'string') return rechazar('el token no es de acceso o no trae correo');
 
   const email = payload.email.toLowerCase();
   if (payload.cpw) return { estado: 'cambiar-password', email };
