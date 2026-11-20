@@ -41,7 +41,7 @@ Navegador ── portal.aed-it.com ──► gateway (nginx)
 | `usuarios` | id, `email` (único, minúsculas), nombre, `activo`, `es_admin`, `password_hash` (nulo si solo usa Microsoft), `debe_cambiar_password`, `microsoft_id`, `microsoft_email`, `intentos_fallidos`, `bloqueado_hasta`, `ultimo_login` |
 | `equipos` | id, nombre, descripción |
 | `equipo_miembros` | equipo × usuario |
-| `apps` | id, `slug` (`cartera`, `siger`, `solicitudes`, `hrsm`, `bases`, `comercial`, `actas`), nombre, `activa` |
+| `apps` | id, `slug` (`cartera`, `siger`, `solicitudes`, `hrsm`, `bases`, `comercial`, `actas`; el `id` de la landing para Comercial hoy es `comerciales` y habrá que alinearlo), nombre, `activa` |
 | `accesos` | app × (usuario **o** equipo); restricción: exactamente uno de los dos |
 | `refresh_tokens` | id, usuario, hash del token, expira, `revocado`, user-agent, IP |
 | `auditoria` | quién cambió qué y cuándo; intentos de login fallidos y exitosos |
@@ -113,6 +113,8 @@ Cada fase se puede desplegar sola y no rompe las anteriores. Ninguna app cambia 
 - Modelos y migraciones; login por contraseña y por Microsoft; emisión y renovación de tokens; JWKS; APIs de usuarios, equipos, apps y accesos; cálculo de acceso efectivo; auditoría.
 - Script de importación (solo lectura, simulacro por defecto, `--aplicar` para escribir): lee los usuarios activos de cada app y crea en el portal los usuarios y sus accesos directos, para que **nadie pierda acceso el día del cambio**. No copia contraseñas.
 - **Verificar:** pruebas con `node:test` del cálculo de acceso (directo, por equipo, ambos, quitar de un equipo, usuario o app inactivos) y de la verificación de tokens (firma, expiración, app no permitida); casos con `curl`: login correcto e incorrecto, bloqueo por intentos, renovación, revocación al desactivar a alguien.
+
+**Avance (2026-11-20):** servicio construido en `auth/` (ver `auth/README.md`) y probado en local: 52 pruebas (`npm test`) cubren el acceso efectivo, tokens y JWKS, login por contraseña con bloqueo, renovación con detección de robo, desactivación, administración, equipos y login con Microsoft; el script `importarUsuarios.js` se probó con bases de origen simuladas (simulacro, aplicar e idempotencia). Cambios respecto al diseño: el token de renovación guarda `revocado_en` para tolerar renovaciones simultáneas de dos pestañas (reuso en menos de 30 s no cierra las demás sesiones), y el login con Microsoft valida `state`. Pendiente de la fase: probar el login real con Microsoft una vez desplegado (necesita la URI de Azure ya registrada) y correr el importador contra las bases reales cuando se decida. **No está desplegado** y aún no hay código en el repositorio remoto (falta el push).
 
 ### Fase 2 — Landing con login y administración
 - Pantallas de la sección 3.7 y cliente de la API.
