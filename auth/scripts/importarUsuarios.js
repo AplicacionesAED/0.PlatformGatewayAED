@@ -14,6 +14,8 @@ const { Client } = require('pg');
 
 const APPS = ['solicitudes', 'cartera', 'hrsm', 'bases', 'comercial', 'siger', 'actas'];
 const aplicar = process.argv.includes('--aplicar');
+// Los correos mal escritos en las apps ("gmail,com", espacios...) no se importan: se listan para corregirlos en su app.
+const CORREO_VALIDO = /^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/;
 
 async function leerPersonasActivas(slug, url) {
   const cliente = new Client({ connectionString: url, ssl: process.env.IMPORT_PGSSL === 'true' ? { rejectUnauthorized: false } : undefined });
@@ -38,6 +40,7 @@ async function main() {
 
   const personas = new Map(); // email -> { nombre, apps: Set<slug> }
   const omitidas = [];
+  const invalidos = []; // [slug, correo]
   for (const slug of APPS) {
     const url = process.env[`IMPORT_DB_${slug.toUpperCase()}`];
     if (!url) {
@@ -49,6 +52,10 @@ async function main() {
     for (const { email, nombre } of filas) {
       const correo = normalizarEmail(email);
       if (!correo) continue;
+      if (!CORREO_VALIDO.test(correo)) {
+        invalidos.push([slug, correo]);
+        continue;
+      }
       if (!personas.has(correo)) personas.set(correo, { nombre: nombre || correo, apps: new Set() });
       personas.get(correo).apps.add(slug);
     }
@@ -58,6 +65,11 @@ async function main() {
     process.exit(1);
   }
   if (omitidas.length) console.log(`Omitidas (sin variable): ${omitidas.join(', ')}`);
+  if (invalidos.length) {
+    console.log(`
+NO se importan ${invalidos.length} correos con formato invalido (corregirlos en su app):`);
+    for (const [slug, correo] of invalidos) console.log(`  - ${correo}  (${slug})`);
+  }
 
   const catalogo = new Map((await App.findAll()).map((a) => [a.slug, a]));
   const existentes = new Set((await Usuario.findAll({ attributes: ['email'] })).map((u) => u.email));
