@@ -1,17 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Clock, History, Lock, Search } from 'lucide-react';
 import { APPS } from './apps.js';
+import { FOTOS } from './fotos.js';
+import { AUTH_ACTIVA, useAuth } from './auth/AuthContext.jsx';
+import MenuUsuario from './auth/MenuUsuario.jsx';
 import styles from './App.module.css';
 
 const BASE = import.meta.env.BASE_URL;
-
-// Fotos del hero: proyectos de AED, tomadas de aed.com.co (Todos los proyectos).
-const FOTOS = [
-  { src: `${BASE}proyectos/baia-kabo.webp`, pie: 'Baía Kabo' },
-  { src: `${BASE}proyectos/kristal-blu.webp`, pie: 'Kristal Blu' },
-  { src: `${BASE}proyectos/vela-village.webp`, pie: 'Vela Village' },
-  { src: `${BASE}proyectos/matimba.webp`, pie: 'Matimbá Club & Spa' },
-];
 
 const PROYECTOS = [
   { nombre: 'OLIV Cartagena', logo: `${BASE}proyectos/logo-oliv.webp` },
@@ -20,7 +15,6 @@ const PROYECTOS = [
 ];
 
 const CLAVE_RECIENTES = 'aed-portal-recientes';
-const AREAS = [...new Set(APPS.map((a) => a.area))];
 
 function normalizar(texto) {
   return texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -62,13 +56,14 @@ function useAhora() {
 
 // Estado en vivo de cada app con `salud`: 'ok', 'caida' o undefined (sin dato: p. ej. en desarrollo, donde Vite
 // responde 404 o HTML en vez de JSON).
-function useSalud() {
+function useSalud(apps) {
   const [salud, setSalud] = useState({});
+  const claves = apps.map((a) => a.id).join(',');
   useEffect(() => {
     let vivo = true;
     async function revisar() {
       const res = await Promise.all(
-        APPS.filter((a) => a.salud && a.estado === 'disponible').map(async (a) => {
+        apps.filter((a) => a.salud && a.estado === 'disponible').map(async (a) => {
           try {
             const r = await fetch(a.salud, { cache: 'no-store', signal: AbortSignal.timeout(6000) });
             // 5xx = el gateway no llega a la app. Un 404 (p. ej. Vite en desarrollo) no dice nada: sin dato.
@@ -89,7 +84,8 @@ function useSalud() {
       vivo = false;
       clearInterval(t);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claves]);
   return salud;
 }
 
@@ -219,7 +215,7 @@ function Seccion({ titulo, apps, salud }) {
   );
 }
 
-function Hero({ busqueda, setBusqueda, alEnter, inputRef }) {
+function Hero({ apps, usuario, busqueda, setBusqueda, alEnter, inputRef }) {
   const ahora = useAhora();
   const [foto, setFoto] = useState(0);
 
@@ -235,7 +231,8 @@ function Hero({ busqueda, setBusqueda, alEnter, inputRef }) {
     month: 'long',
     timeZone: 'America/Bogota',
   });
-  const totalDisponibles = APPS.filter((a) => a.estado === 'disponible').length;
+  const totalDisponibles = apps.filter((a) => a.estado === 'disponible').length;
+  const totalAreas = new Set(apps.map((a) => a.area)).size;
 
   return (
     <div className={styles.top}>
@@ -251,6 +248,7 @@ function Hero({ busqueda, setBusqueda, alEnter, inputRef }) {
           <span className={styles.divider} aria-hidden="true" />
           <span className={styles.product}>Plataforma</span>
           <span className={styles.fecha}>{fecha}</span>
+          {usuario && <MenuUsuario usuario={usuario} />}
         </div>
       </header>
 
@@ -284,7 +282,7 @@ function Hero({ busqueda, setBusqueda, alEnter, inputRef }) {
 
           <dl className={styles.stats}>
             <div>
-              <dt>Aplicaciones activas</dt>
+              <dt>{usuario ? 'Tus aplicaciones' : 'Aplicaciones activas'}</dt>
               <dd>
                 <Contador valor={totalDisponibles} />
               </dd>
@@ -292,13 +290,13 @@ function Hero({ busqueda, setBusqueda, alEnter, inputRef }) {
             <div>
               <dt>Áreas de negocio</dt>
               <dd>
-                <Contador valor={AREAS.length} />
+                <Contador valor={totalAreas} />
               </dd>
             </div>
             <div>
               <dt>En desarrollo</dt>
               <dd>
-                <Contador valor={APPS.length - totalDisponibles} />
+                <Contador valor={apps.length - totalDisponibles} />
               </dd>
             </div>
           </dl>
@@ -325,14 +323,22 @@ function Hero({ busqueda, setBusqueda, alEnter, inputRef }) {
 }
 
 export default function App() {
+  const auth = useAuth();
+  const usuario = AUTH_ACTIVA ? auth?.usuario ?? null : null;
+  // Con login activo solo se ven las apps con acceso (las "en desarrollo" son informativas y se ven siempre).
+  const apps = useMemo(
+    () => APPS.filter((a) => a.estado !== 'disponible' || !AUTH_ACTIVA || usuario?.apps.some((x) => x.slug === a.slug)),
+    [usuario],
+  );
+  const areas = useMemo(() => [...new Set(apps.map((a) => a.area))], [apps]);
   const [busqueda, setBusqueda] = useState('');
   const [area, setArea] = useState('Todas');
   const [recientes] = useState(() =>
     leerRecientes()
-      .map((id) => APPS.find((a) => a.id === id && a.estado === 'disponible' && !a.bloqueada))
+      .map((id) => apps.find((a) => a.id === id && a.estado === 'disponible' && !a.bloqueada))
       .filter(Boolean),
   );
-  const salud = useSalud();
+  const salud = useSalud(apps);
   const inputRef = useRef(null);
 
   // "/" enfoca la búsqueda desde cualquier parte de la página.
@@ -350,12 +356,12 @@ export default function App() {
 
   const filtradas = useMemo(() => {
     const q = normalizar(busqueda.trim());
-    return APPS.filter(
+    return apps.filter(
       (a) =>
         (area === 'Todas' || a.area === area) &&
         (!q || normalizar(`${a.nombre} ${a.area} ${a.descripcion}`).includes(q)),
     );
-  }, [busqueda, area]);
+  }, [apps, busqueda, area]);
 
   const disponibles = filtradas.filter((a) => a.estado === 'disponible');
   const proximamente = filtradas.filter((a) => a.estado !== 'disponible');
@@ -370,7 +376,7 @@ export default function App() {
 
   return (
     <>
-      <Hero busqueda={busqueda} setBusqueda={setBusqueda} alEnter={abrirPrimera} inputRef={inputRef} />
+      <Hero apps={apps} usuario={usuario} busqueda={busqueda} setBusqueda={setBusqueda} alEnter={abrirPrimera} inputRef={inputRef} />
 
       <main className={styles.main}>
         {recientes.length > 0 && (
@@ -399,7 +405,7 @@ export default function App() {
         )}
 
         <div className={styles.filters} role="group" aria-label="Filtrar por área">
-          {['Todas', ...AREAS].map((a) => (
+          {['Todas', ...areas].map((a) => (
             <button
               key={a}
               type="button"
@@ -411,6 +417,12 @@ export default function App() {
             </button>
           ))}
         </div>
+
+        {AUTH_ACTIVA && !apps.some((a) => a.estado === 'disponible') && (
+          <p className={styles.sinApps} role="status">
+            Todavía no tienes aplicaciones asignadas. Pide acceso a TI y aparecerán aquí.
+          </p>
+        )}
 
         {filtradas.length === 0 ? (
           <p className={styles.empty}>No hay aplicaciones que coincidan con la búsqueda.</p>

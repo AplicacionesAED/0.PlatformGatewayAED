@@ -11,10 +11,12 @@ import {
 
 // Orden = el de los proyectos de Coolify (sin el numero). Para conectar una app: estado 'disponible' y su href
 // (ver README.md). `salud`: healthcheck de la app por el gateway (sin el, la tarjeta no muestra estado en vivo).
+// `slug`: nombre de la app en el servicio de login (auth/); con login activo la tarjeta solo se ve a quien tiene ese acceso.
 // `bloqueada: true` deja la tarjeta en Disponibles pero sin enlace: la app sigue accesible por URL.
 export const APPS = [
   {
     id: 'solicitudes',
+    slug: 'solicitudes',
     salud: '/solicitudes/health',
     acento: '#232bed',
     nombre: 'Solicitudes de Contratación',
@@ -26,6 +28,7 @@ export const APPS = [
   },
   {
     id: 'cartera',
+    slug: 'cartera',
     salud: '/cartera/api/health',
     acento: '#0f8f8a',
     nombre: 'Cartera',
@@ -37,6 +40,7 @@ export const APPS = [
   },
   {
     id: 'hrsm',
+    slug: 'hrsm',
     acento: '#c0551a',
     nombre: 'Recursos Humanos',
     area: 'Gestión humana',
@@ -47,6 +51,7 @@ export const APPS = [
   },
   {
     id: 'bases',
+    slug: 'bases',
     salud: '/bases/health',
     acento: '#3b6ea5',
     nombre: 'Bases Presupuestales',
@@ -68,6 +73,7 @@ export const APPS = [
   },
   {
     id: 'comerciales',
+    slug: 'comercial',
     salud: '/comercial/health',
     acento: '#0b2d4d',
     nombre: 'Centro de Aplicaciones Comerciales',
@@ -88,6 +94,7 @@ export const APPS = [
   },
   {
     id: 'siger',
+    slug: 'siger',
     salud: '/siger/health',
     acento: '#1a8a4a',
     nombre: 'SISGER',

@@ -8,7 +8,7 @@
     "start": "npm run db:migrate && node src/server.js",
     "db:migrate": "sequelize-cli db:migrate",
     "importar-usuarios": "node scripts/importarUsuarios.js",
-    "test": "node --test \"test/**/*.test.js\""
+    "test": "node --test --test-concurrency=1 \"test/**/*.test.js\""
   },
   "dependencies": {
     "@azure/msal-node": "^7.2.3",

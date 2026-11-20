@@ -120,6 +120,13 @@ Cada fase se puede desplegar sola y no rompe las anteriores. Ninguna app cambia 
 - Pantallas de la sección 3.7 y cliente de la API.
 - **Verificar:** en el navegador, en escritorio y móvil: login con ambos métodos, cambio obligatorio de contraseña, tarjetas filtradas según acceso, alta de usuario y de equipo, asignación de accesos, cierre de sesión.
 
+**Avance (2026-11-20):** construido en `gateway/src/` y verificado en el navegador contra el servicio local (escritorio y móvil): `/login` (Microsoft y correo con contraseña, errores de Microsoft), `/cambiar-password` obligatorio con temporal, portal con tarjetas filtradas por acceso y menú de usuario, y `/admin` (personas, equipos, matriz de accesos y auditoría). Comprobado de punta a punta: crear persona con temporal, forzar cambio, dar acceso por equipo y directo, y que la persona solo ve sus apps y no entra a `/admin`.
+
+- **Interruptor de despliegue `VITE_PORTAL_AUTH`:** sin `true` en el build el portal funciona exactamente como antes (sin sesión y con todas las tarjetas). Así este código se puede publicar sin que el portal dependa de un servicio que aún no existe. Se enciende en la fase 3.
+- `slug` agregado a cada app en `gateway/src/apps.js` (el `id` de Comercial sigue siendo `comerciales`; su `slug` es `comercial`).
+- Pendiente para la fase 3: build-arg `VITE_PORTAL_AUTH=true` en el Dockerfile del gateway, bloque `/portal/` en nginx, respaldo de SPA para `/login`, `/admin` y `/cambiar-password`, y la variable `PORTAL_AUTH_UPSTREAM`.
+- Pendiente de verificar: el login real con Microsoft (requiere despliegue).
+
 ### Fase 3 — Gateway
 - Ruta `/portal/api/`, respaldo de SPA, variable `PORTAL_AUTH_UPSTREAM`, README actualizado. `auth_request` preparado pero apagado.
 - **Verificar:** build del contenedor en local con `docker compose`, rutas de las apps sin cambios, `/login` carga al refrescar la página.

@@ -779,3 +779,13 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Con login activo y sin ninguna app asignada. */
+.sinApps {
+  padding: var(--space-lg);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-ink-secondary);
+  text-align: center;
+}

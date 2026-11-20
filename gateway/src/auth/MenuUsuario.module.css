@@ -1,0 +1,103 @@
+/* Menu de la persona en sesion: se pinta sobre el encabezado azul marino del portal y de la administracion. */
+
+.raiz {
+  position: relative;
+  margin-left: var(--space-md);
+}
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px 0 6px;
+  border: 1px solid color-mix(in srgb, #fff 22%, transparent);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, #fff 8%, transparent);
+  color: #fff;
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.boton:hover,
+.boton[aria-expanded='true'] {
+  background: color-mix(in srgb, #fff 16%, transparent);
+}
+
+.avatar {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gradient-aed);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.nombre {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: var(--z-dropdown);
+  min-width: 250px;
+  padding: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--color-ink);
+  box-shadow: var(--shadow-floating);
+}
+
+.quien {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--color-border);
+  overflow-wrap: anywhere;
+}
+
+.quien span {
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-ink);
+  font-size: var(--text-body-size);
+  text-align: left;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: var(--color-surface-hover);
+}
+
+@media (max-width: 480px) {
+  .nombre {
+    display: none;
+  }
+
+  .boton {
+    padding: 0 8px 0 6px;
+  }
+}

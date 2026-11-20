@@ -162,3 +162,9 @@ Permissions-Policy para todo el portal (landing y apps). Las cabeceras equivalen
 (`proxy_hide_header`) para que mande solo la politica del gateway. CSP: todo `'self'` (las apps no cargan recursos externos),
 `style-src 'unsafe-inline'` por los estilos en linea de React/ApexCharts, `img-src data: blob:`. Si una app necesita un
 origen externo (CDN, iframe, Google Drive embebido), agregarlo ahi y redeployar el gateway.
+
+## Login global (en construcción)
+
+Ver `docs/PLAN-LOGIN-GLOBAL.md`. La landing ya trae el login, el cambio de contraseña y la administración de accesos (`gateway/src/auth`, `gateway/src/admin`), pero quedan **apagados** salvo que el build lleve `VITE_PORTAL_AUTH=true`: sin eso el portal es el de siempre. El servicio que los respalda vive en `auth/` (ver `auth/README.md`).
+
+Probarlo en local: servicio de login en `auth/` (`npm run dev`, puerto 3060, con su base y `PORTAL_REFRESH_COOKIE_PATH=/portal/api/auth`) y en `gateway/` `VITE_PORTAL_AUTH=true npm run dev`; Vite reenvía `/portal/api` al servicio. Las pruebas del servicio se corren en serie (`npm test` en `auth/`) porque comparten la base de pruebas.

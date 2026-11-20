@@ -1,0 +1,60 @@
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { api, ApiError } from '../api/client.js';
+
+// Interruptor de despliegue: mientras el servicio de login (auth/) y el gateway no esten publicados, el portal se construye
+// SIN login (VITE_PORTAL_AUTH distinto de "true") y se comporta exactamente como antes: sin sesion y con todas las tarjetas.
+export const AUTH_ACTIVA = import.meta.env.VITE_PORTAL_AUTH === 'true';
+
+const AuthContext = createContext(null);
+
+// Estado de la sesion: { cargando, usuario, errorConexion }. El usuario solo se borra con un 401 real; si el servidor no
+// responde (un despliegue, red caida) NO se manda a la persona al login: se avisa y se puede reintentar.
+export function AuthProvider({ children }) {
+  const [estado, setEstado] = useState({ cargando: true, usuario: null, errorConexion: false });
+
+  const cargar = useCallback(async () => {
+    try {
+      setEstado({ cargando: false, usuario: await api.get('/me'), errorConexion: false });
+    } catch (err) {
+      const sinSesion = err instanceof ApiError && err.status === 401;
+      setEstado({ cargando: false, usuario: null, errorConexion: !sinSesion });
+    }
+  }, []);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  const valor = useMemo(
+    () => ({
+      ...estado,
+      recargar: () => {
+        setEstado((e) => ({ ...e, cargando: true }));
+        return cargar();
+      },
+      login: async (email, password) => {
+        const usuario = await api.post('/auth/login', { email, password });
+        setEstado({ cargando: false, usuario, errorConexion: false });
+        return usuario;
+      },
+      cambiarPassword: async (passwordActual, passwordNueva) => {
+        const usuario = await api.post('/auth/cambiar-password', { passwordActual, passwordNueva });
+        setEstado({ cargando: false, usuario, errorConexion: false });
+        return usuario;
+      },
+      logout: async () => {
+        try {
+          await api.post('/auth/logout');
+        } finally {
+          setEstado({ cargando: false, usuario: null, errorConexion: false });
+        }
+      },
+    }),
+    [estado, cargar]
+  );
+
+  return <AuthContext.Provider value={valor}>{children}</AuthContext.Provider>;
+}
+
+// Con el interruptor apagado no hay proveedor: devuelve null y el portal funciona sin sesion.
+export const useAuth = () => useContext(AuthContext);

@@ -27,6 +27,7 @@ const perfilDe = (usuario, { apps, equipos }) => ({
   nombre: usuario.nombre,
   esAdmin: usuario.es_admin,
   debeCambiarPassword: usuario.debe_cambiar_password,
+  tienePassword: Boolean(usuario.password_hash),
   apps: apps.map((a) => ({ slug: a.slug, nombre: a.nombre })),
   equipos,
 });

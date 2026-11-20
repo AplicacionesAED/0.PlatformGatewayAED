@@ -342,6 +342,7 @@ describe('portal-auth (HTTP)', () => {
       const r = await c.get('/api/auditoria?limit=1');
       assert.equal(r.status, 200);
       assert.equal(r.body.data.length, 1);
+      assert.equal(r.body.data[0].actor.email, 'adm@gmail.test');
       assert.ok(r.body.meta.total >= 1);
       assert.equal((await c.get('/api/auditoria?limit=999')).status, 422);
     });
