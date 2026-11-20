@@ -58,3 +58,7 @@ Lee (solo lectura) cada base indicada en `IMPORT_DB_SOLICITUDES`, `IMPORT_DB_CAR
 ## Despliegue (Coolify)
 
 Recurso Dockerfile, Base Directory `/auth`, puerto 3060, base Postgres propia. `npm start` migra y arranca. Variables: ver `.env.example`.
+
+## Cliente para las apps (`cliente/portalAuth.js`)
+
+Módulo que cada app copia **idéntico** en `backend/src/utils/portalAuth.js` para verificar la sesión del portal con la llave pública (JWKS, con caché y relectura al rotar la llave). Resuelve `ok`, `sin-acceso`, `cambiar-password` o `sin-sesion` y lee el modo de `PORTAL_AUTH` (`off|optional|required`). Pruebas: `test/cliente.test.js`. Si se cambia, volver a copiarlo a todas las apps.
