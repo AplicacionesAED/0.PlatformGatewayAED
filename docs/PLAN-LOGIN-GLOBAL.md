@@ -104,8 +104,10 @@ Cada fase se puede desplegar sola y no rompe las anteriores. Ninguna app cambia 
 **Avance (2026-11-20):**
 - Hecho: base `BD Portal Auth` (`portal_aed`, Postgres 18, no pública) y recurso `Portal Auth` en el proyecto `0. GATEWAY` de Coolify (Base Directory `/auth`, puerto 3060, dominio `https://pwuuahx9t1houvmk2z4kvnxg.72.62.100.53.sslip.io`). El recurso **no está desplegado** porque `auth/` aún no existe en el repositorio.
 - Hecho: variables de entorno cargadas en el recurso (`DATABASE_URL`, llave privada `PORTAL_JWT_PRIVATE_KEY_B64` en base64, `PORTAL_JWT_KID`, `AZURE_*` copiadas de SIGER, `AZURE_REDIRECT_URI`, `PORTAL_CORPORATE_DOMAINS=aed.com.co`, `FRONTEND_URL`, `CORS_ORIGIN`, `PORT`, `NODE_ENV`, `PGSSL`).
-- Pendiente: `PORTAL_ADMIN_EMAILS` (correos de los primeros administradores) y registrar en Azure, en "Acceso Apps" > Autenticación > Web, la URI `https://portal.aed-it.com/portal/api/auth/azure/callback`.
-- Pendiente: confirmar que el repositorio que usa Coolify (`Gestion-servicios-TI-AED/PlatformGatewayAED`) es el mismo que el `origin` local (`AplicacionesAED/0.PlatformGatewayAED`).
+- Hecho: `PORTAL_ADMIN_EMAILS` cargado con los dos administradores iniciales (Gabriel y Rubén).
+- Hecho: URI `https://portal.aed-it.com/portal/api/auth/azure/callback` registrada en Azure, en "Acceso Apps" > Autenticación > Web.
+- Confirmado: el repositorio que usa Coolify (`Gestion-servicios-TI-AED/PlatformGatewayAED`) es el mismo que el `origin` local (`AplicacionesAED/0.PlatformGatewayAED`).
+- **Fase 0 cerrada**, salvo la verificación de `/health`, que requiere código desplegado (fase 1).
 
 ### Fase 1 — Servicio `portal-auth`
 - Modelos y migraciones; login por contraseña y por Microsoft; emisión y renovación de tokens; JWKS; APIs de usuarios, equipos, apps y accesos; cálculo de acceso efectivo; auditoría.
