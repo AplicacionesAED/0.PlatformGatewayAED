@@ -32,6 +32,11 @@ function getMsalClient() {
 }
 
 const errorUrl = (codigo) => `${FRONTEND_URL()}/login?error=${codigo}`;
+// Cada rechazo deja su MOTIVO en el log del servicio (la persona solo ve un codigo generico): sin esto un retorno fallido de Microsoft no se puede diagnosticar.
+const rechazar = (res, codigo, motivo, extra = '') => {
+  console.warn(`[azure] ${codigo}: ${motivo}${extra ? ` (${extra})` : ''}`); // eslint-disable-line no-console
+  return res.redirect(errorUrl(codigo));
+};
 const cookieOpciones = () => ({ httpOnly: true, sameSite: 'lax', secure: secure(), path: '/', maxAge: 10 * 60 * 1000 });
 
 // GET /auth/azure/login?next=/cartera/
@@ -57,27 +62,34 @@ const callback = asyncHandler(async (req, res) => {
   const { maxAge: _m, ...limpiar } = cookieOpciones();
   res.clearCookie(OAUTH_COOKIE, limpiar);
 
-  if (error || !code || !client || !guardado?.state || guardado.state !== state) return res.redirect(errorUrl('OAuthError'));
+  if (error) return rechazar(res, 'OAuthError', 'Microsoft devolvio un error', `${error}: ${String(req.query.error_description ?? '').slice(0, 200)}`);
+  if (!code) return rechazar(res, 'OAuthError', 'falta el code en el retorno');
+  if (!client) return rechazar(res, 'OAuthError', 'faltan las variables AZURE_*');
+  if (!guardado?.state) return rechazar(res, 'OAuthError', 'no llego la cookie portal_oauth (state)');
+  if (guardado.state !== state) return rechazar(res, 'OAuthError', 'el state no coincide');
 
   let respuesta;
   try {
     respuesta = await client.acquireTokenByCode({ code, scopes: SCOPES, redirectUri: REDIRECT_URI() });
-  } catch {
-    return res.redirect(errorUrl('OAuthError'));
+  } catch (err) {
+    return rechazar(res, 'OAuthError', 'no se pudo canjear el code', `${err.errorCode ?? err.name}: ${String(err.errorMessage ?? err.message).slice(0, 200)}`);
   }
 
   const claims = respuesta.account?.idTokenClaims ?? {};
   const microsoftId = respuesta.uniqueId || claims.oid || claims.sub;
   const email = respuesta.account?.username || claims.email || claims.preferred_username || '';
   // Solo cuentas del tenant de AED (el authority ya es de un solo tenant; esto lo confirma sobre el token recibido).
-  if (!microsoftId || (claims.tid && claims.tid !== process.env.AZURE_TENANT_ID)) return res.redirect(errorUrl('OAuthError'));
+  if (!microsoftId) return rechazar(res, 'OAuthError', 'el token no trae identificador de la cuenta');
+  if (claims.tid && claims.tid !== process.env.AZURE_TENANT_ID) return rechazar(res, 'OAuthError', 'la cuenta es de otro tenant');
 
   try {
     const { tokens } = await service.loginMicrosoft({ microsoftId, email, nombre: claims.name }, contexto(req));
     setSessionCookies(res, tokens);
     return res.redirect(`${FRONTEND_URL()}${rutaSegura(guardado.next)}`);
   } catch (err) {
-    if (err instanceof ApiError && (err.message === 'OAuthAccountNotFound' || err.message === 'OAuthAccountInactive')) return res.redirect(errorUrl(err.message));
+    if (err instanceof ApiError && (err.message === 'OAuthAccountNotFound' || err.message === 'OAuthAccountInactive')) {
+      return rechazar(res, err.message, 'la cuenta no puede entrar', `correo recibido de Microsoft: ${email || 'ninguno'}`);
+    }
     throw err;
   }
 });

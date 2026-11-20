@@ -389,6 +389,30 @@ describe('portal-auth (HTTP)', () => {
     });
   });
 
+  describe('retorno de Microsoft (HTTP)', () => {
+    const volver = async (ruta) => {
+      const res = await fetch(base + ruta, { redirect: 'manual' });
+      return { status: res.status, location: res.headers.get('location') };
+    };
+
+    it('un retorno sin code, con error de Microsoft o sin la cookie de state termina en el login con OAuthError', async () => {
+      for (const ruta of [
+        '/api/auth/azure/callback',
+        '/api/auth/azure/callback?error=access_denied&error_description=cancelado',
+        '/api/auth/azure/callback?code=abc&state=xyz',
+      ]) {
+        const r = await volver(ruta);
+        assert.equal(r.status, 302, ruta);
+        assert.match(r.location, /\/login\?error=OAuthError$/, ruta);
+      }
+    });
+
+    it('nunca deja una sesion abierta tras un retorno rechazado', async () => {
+      const res = await fetch(`${base}/api/auth/azure/callback?code=abc&state=xyz`, { redirect: 'manual' });
+      assert.equal(res.headers.getSetCookie().some((c) => c.startsWith('portal_session=') && !/Max-Age=0|1970/.test(c)), false);
+    });
+  });
+
   describe('JWKS', () => {
     it('publica la llave pública y no la privada', async () => {
       const r = await cliente().get('/api/.well-known/jwks.json');
