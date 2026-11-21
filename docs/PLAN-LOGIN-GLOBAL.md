@@ -152,6 +152,8 @@ Pendiente: probar el login con Microsoft real (se puede ya, entrando a `/portal/
 - **Pendiente:** desplegar SIGER en `optional` (variable `PORTAL_AUTH=optional` en Coolify), verificar entrando por el portal, y pasar a `required`; después Solicitudes (copiando el mismo módulo).
 
 
+**Solicitudes (2026-11-21):** migrada con el mismo módulo (repositorio `1. SOLICITUDES DE CONTRATACIÓN`, commit `f0c7265`): `PORTAL_AUTH`, `/api/auth/modo`, 410 en `required` para login, refresh y vincular/desvincular Microsoft, frontend con redirección al login del portal, pantalla de bloqueo, acceso "Portal AED" y perfil sin la sección de Microsoft en `required`. Probado en local contra el servicio real del portal con una base de Solicitudes propia: backend en los tres modos y, en el navegador con la réplica del gateway, sin sesión → login del portal con "Para abrir Solicitudes de Contratación", login → vuelve a Solicitudes, cerrar sesión → login del portal sin `next` y sesión del portal cerrada. Mejoras comunes: el login del portal indica a qué app se entra, las apps tienen acceso "Portal AED", y cerrar sesión termina en el login del portal sin volver a la app (SIGER `a6bedd0`). `PORTAL_AUTH=optional` ya cargado en Coolify; pendiente el push, verificar en producción y pasar a `required`.
+
 ### Fase 5 — Cartera, Recursos Humanos y Bases
 - Mismo módulo; se elimina su login por contraseña (detrás del interruptor). Estas tres apps ganan login con Microsoft sin código propio.
 - **Verificar:** igual que la fase 4, más que las contraseñas viejas dejen de funcionar solo al pasar a `required`.
