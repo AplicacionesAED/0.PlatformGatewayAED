@@ -238,6 +238,15 @@
 
 .modal::backdrop {
   background: rgba(11, 45, 77, 0.55);
+  /* Contencion del scroll: el fondo por defecto NO es un contenedor de scroll (overflow: visible) y no respeta
+     overscroll-behavior; con overflow: hidden pasa a serlo y la pagina de atras deja de desplazarse. No se bloquea el scroll
+     con overflow: hidden en html/body (quitaria la barra y movería el diseño). Mejora progresiva: sin soporte (Safari) no pasa nada. */
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+.modal:modal {
+  overscroll-behavior: contain;
 }
 
 .modalCuerpo {
