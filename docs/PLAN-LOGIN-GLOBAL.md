@@ -166,6 +166,12 @@ Pendiente: probar el login con Microsoft real (se puede ya, entrando a `/portal/
 - **No probado:** contra el servicio real del portal ni en producción; el caso de una persona con cambio de contraseña pendiente (no hay ninguna en la base).
 - **Pendiente:** push, `PORTAL_AUTH=optional` en Coolify, verificar en producción y pasar a `required`. Las pantallas de Accesos que crean o regeneran contraseñas quedan sin uso en `required` (se retiran en la fase 6).
 
+**Bases Presupuestales (2026-11-23):** migrada con el mismo módulo (repositorio `4. BASES PRESUPUESTALES`), igual que Cartera: `PORTAL_AUTH`, `/api/v1/auth/modo`, 410 en `required` para login, refresh y cambio de contraseña, y el mismo frontend (aquí con axios). La persona se busca por `email`; el rol (uno por cuenta) y los permisos siguen siendo de Bases. Bases no frena en el backend por cambio de contraseña pendiente, así que no necesita `viaPortal`.
+- **Probado en local (backend):** la app real contra su base en solo lectura y un JWKS de prueba, 29 comprobaciones en `required`, `optional` y `off`, todas bien (mismos casos que Cartera).
+- **Probado en el navegador** con el build bajo `/bases/` y un gateway simulado (API y portal simulados): sin sesión → `/login?next=%2Fbases%2F`; con sesión → entra (probado en Metodología; el Inicio no cargó porque la API simulada no devuelve la forma real del tablero); menú con "Portal AED"; cerrar sesión llama al logout del portal y termina en `/login`; 403 → "No puedes entrar a Bases Presupuestales"; portal con sesión pero Bases 401 → "Bases no pudo validar tu sesión"; `optional` muestra ambos ingresos; `off` solo el propio.
+- **No probado:** contra el servicio real del portal ni en producción.
+- **Pendiente:** push, `PORTAL_AUTH=optional` en Coolify, verificar en producción y pasar a `required`.
+
 ### Fase 6 — Comercial, Actas y cierre
 - Comercial: decidir qué pasa con su login con HubSpot (hoy queda dentro de la app hasta resolverlo). Actas: mismo módulo.
 - Redirigir los dominios directos de cada app al portal (la cookie solo existe en `portal.aed-it.com`) y retirar el código de login viejo.
