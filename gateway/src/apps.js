@@ -5,7 +5,6 @@ import {
   Calculator,
   HardHat,
   BriefcaseBusiness,
-  Building2,
   Recycle,
 } from 'lucide-react';
 
@@ -81,15 +80,6 @@ export const APPS = [
     icono: BriefcaseBusiness,
     estado: 'proximamente', // en desarrollo: la tarjeta no abre la app (la ruta sigue funcionando entrando por URL)
     href: '/comercial/',
-  },
-  {
-    id: 'oliv',
-    acento: '#5b6b7f',
-    nombre: 'OLIV',
-    area: 'Proyectos',
-    descripcion: 'Gestión del proyecto OLIV.',
-    icono: Building2,
-    estado: 'proximamente',
   },
   {
     id: 'siger',
