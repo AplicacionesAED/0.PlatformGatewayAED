@@ -131,7 +131,7 @@ Conectada igual que Cartera y Bases: ruta `/solicitudes/` en `gateway/nginx.conf
 
 ## Centro de Aplicaciones Comerciales
 
-Conectada igual que Cartera: ruta `/comercial/` en `gateway/nginx.conf.template` (con `client_max_body_size 20m` por los PDF y Word que se suben) y tarjeta `disponible` en `gateway/src/apps.js`. La app se compila con `VITE_BASE_PATH=/comercial/`. La app vieja (`cac.aed-it.com`) sigue funcionando por su cuenta, sin pasar por el gateway.
+Conectada igual que Cartera: ruta `/comercial/` en `gateway/nginx.conf.template` (con `client_max_body_size 20m` por los PDF y Word que se suben) y tarjeta en `gateway/src/apps.js`. Desde el 2026-11-23 la tarjeta está en "En desarrollo" (`estado: 'proximamente'`): no abre la app, pero la ruta `/comercial/` sigue activa entrando por URL; para volver a mostrarla como disponible, `estado: 'disponible'`. La app se compila con `VITE_BASE_PATH=/comercial/`. La app vieja (`cac.aed-it.com`) sigue funcionando por su cuenta, sin pasar por el gateway.
 
 **Orden de despliegue en Coolify (importante):**
 1. App nueva: build-arg `VITE_BASE_PATH=/comercial/` y variables `FRONTEND_URL=https://portal.aed-it.com/comercial`, `CORS_ORIGIN=https://portal.aed-it.com`, `HUBSPOT_REDIRECT_URI=https://portal.aed-it.com/comercial/api/auth/hubspot/callback`; desplegar.
@@ -149,7 +149,7 @@ Conectada igual que Cartera: ruta `/siger/` en `gateway/nginx.conf.template` (co
 
 ## Tarjetas bloqueadas y orden
 
-El orden de las tarjetas en `gateway/src/apps.js` es el de los proyectos de Coolify (sin el número). Una app con `estado: 'disponible'` y `bloqueada: true` sigue en "Disponibles" pero su tarjeta no abre la app ("Acceso bloqueado", sin enlace). Es solo la tarjeta: la ruta del gateway (`/solicitudes/`, `/bases/`) sigue activa y se puede entrar escribiendo la URL. Hoy está bloqueada Bases Presupuestales (Solicitudes de Contratación se desbloqueó el 2026-11-18). Para desbloquear una, borrar su línea `bloqueada: true`.
+El orden de las tarjetas en `gateway/src/apps.js` es el de los proyectos de Coolify (sin el número). Una app con `estado: 'disponible'` y `bloqueada: true` sigue en "Disponibles" pero su tarjeta no abre la app ("Acceso bloqueado", sin enlace). Es solo la tarjeta: la ruta del gateway (`/solicitudes/`, `/bases/`) sigue activa y se puede entrar escribiendo la URL. Hoy no hay ninguna bloqueada (Solicitudes de Contratación se desbloqueó el 2026-11-18 y Bases Presupuestales el 2026-11-23). Para desbloquear una, borrar su línea `bloqueada: true`.
 
 ## Diseño de la landing
 

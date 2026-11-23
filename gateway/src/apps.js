@@ -60,7 +60,6 @@ export const APPS = [
     icono: Calculator,
     estado: 'disponible',
     href: '/bases/',
-    bloqueada: true, // sigue disponible (la ruta funciona entrando por URL), pero la tarjeta no abre la app
   },
   {
     id: 'bitacora',
@@ -80,7 +79,7 @@ export const APPS = [
     area: 'Comercial',
     descripcion: 'Herramientas para la gestión comercial y de ventas.',
     icono: BriefcaseBusiness,
-    estado: 'disponible',
+    estado: 'proximamente', // en desarrollo: la tarjeta no abre la app (la ruta sigue funcionando entrando por URL)
     href: '/comercial/',
   },
   {
