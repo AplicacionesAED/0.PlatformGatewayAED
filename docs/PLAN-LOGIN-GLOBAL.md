@@ -172,6 +172,9 @@ Pendiente: probar el login con Microsoft real (se puede ya, entrando a `/portal/
 - **No probado:** contra el servicio real del portal ni en producción.
 - **Pendiente:** push, `PORTAL_AUTH=optional` en Coolify, verificar en producción y pasar a `required`.
 
+**Cartera y Bases en producción en `optional` (2026-11-23):** desplegadas (Cartera `505913c`, Bases `7b52571`) y verificadas primero en `off` (modo, 401 sin sesión, login propio activo, pantallas de login sin cambios). Luego `PORTAL_AUTH=optional` por la API de Coolify (variable nueva en las apps `kmmnworr17hvzi537n45px7l` y `rwmrx9fo6ohlrh904ll4vuay`) y reinicio. Verificado en ambas: `/auth/modo` = `optional` estable, sin sesión 401, cookie `portal_session` inválida 401, login propio y refresh siguen activos (401 por credenciales, no 410), el login muestra "Entrar con el portal AED" y ese botón lleva a `portal.aed-it.com/login?next=%2Fcartera%2F` ("Para abrir Cartera") y `?next=%2Fbases%2F` ("Para abrir Bases Presupuestales"). SIGER y Solicitudes siguen en `required`. En el reinicio de Cartera respondieron a la vez el contenedor viejo y el nuevo durante unos 2 minutos (modos `off` y `optional` alternados); luego se estabilizó.
+- **Pendiente:** prueba positiva con una persona real (entrar por el portal y llegar a cada app sin su login, menú "Portal AED", cierre de sesión conjunto) y pasar ambas a `required`. Reversa: `PORTAL_AUTH=off` y reiniciar.
+
 ### Fase 6 — Comercial, Actas y cierre
 - Comercial: decidir qué pasa con su login con HubSpot (hoy queda dentro de la app hasta resolverlo). Actas: mismo módulo.
 - Redirigir los dominios directos de cada app al portal (la cookie solo existe en `portal.aed-it.com`) y retirar el código de login viejo.
