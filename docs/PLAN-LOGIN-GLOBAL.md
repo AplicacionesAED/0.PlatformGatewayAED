@@ -41,7 +41,7 @@ Navegador ── portal.aed-it.com ──► gateway (nginx)
 | `usuarios` | id, `email` (único, minúsculas), nombre, `activo`, `es_admin`, `password_hash` (nulo si solo usa Microsoft), `debe_cambiar_password`, `microsoft_id`, `microsoft_email`, `intentos_fallidos`, `bloqueado_hasta`, `ultimo_login` |
 | `equipos` | id, nombre, descripción |
 | `equipo_miembros` | equipo × usuario |
-| `apps` | id, `slug` (`cartera`, `siger`, `solicitudes`, `hrsm`, `bases`, `comercial`, `actas`; el `id` de la landing para Comercial hoy es `comerciales` y habrá que alinearlo), nombre, `activa` |
+| `apps` | id, `slug` (`cartera`, `siger`, `solicitudes`, `hrsm`, `bases`, `comercial`; `actas` se quitó del catálogo el 2026-11-23 hasta que el Bot de Actas entre al portal; el `id` de la landing para Comercial hoy es `comerciales` y habrá que alinearlo), nombre, `activa` |
 | `accesos` | app × (usuario **o** equipo); restricción: exactamente uno de los dos |
 | `refresh_tokens` | id, usuario, hash del token, expira, `revocado`, user-agent, IP |
 | `auditoria` | quién cambió qué y cuándo; intentos de login fallidos y exitosos |
@@ -179,7 +179,7 @@ Pendiente: probar el login con Microsoft real (se puede ya, entrando a `/portal/
 - **Pendiente:** prueba positiva en `required` con persona real (se probó en `optional`, mismo camino de código) y confirmar la carga diaria de n8n con su llave real. Reversa: `PORTAL_AUTH=optional` y reiniciar. Antes de `required`, confirmar que las personas con dominio no corporativo que usan Cartera o Bases ya tienen su contraseña temporal del portal. Reversa: `PORTAL_AUTH=off` y reiniciar.
 
 ### Fase 6 — Comercial, Actas y cierre
-- Comercial: decidir qué pasa con su login con HubSpot (hoy queda dentro de la app hasta resolverlo). Actas: mismo módulo.
+- Comercial: decidir qué pasa con su login con HubSpot (hoy queda dentro de la app hasta resolverlo). Actas: mismo módulo; antes hay que volver a agregar `actas` al catálogo con una migración nueva (se quitó el 2026-11-23, migración `20261123000000-quitar-app-actas.js`) y al importador.
 - Redirigir los dominios directos de cada app al portal (la cookie solo existe en `portal.aed-it.com`) y retirar el código de login viejo.
 - **Verificar:** ninguna app responde con sesión propia; los dominios directos redirigen.
 

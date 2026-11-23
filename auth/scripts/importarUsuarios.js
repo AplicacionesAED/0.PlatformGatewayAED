@@ -4,7 +4,7 @@
 // Simulacro por defecto: muestra que haria. Con --aplicar escribe en la base del portal (DATABASE_URL), de forma idempotente.
 //
 // Cada app se lee de una variable IMPORT_DB_<APP> con su cadena de conexion (ponerla en el shell, no en un archivo del repo):
-//   IMPORT_DB_SOLICITUDES, IMPORT_DB_CARTERA, IMPORT_DB_HRSM, IMPORT_DB_BASES, IMPORT_DB_COMERCIAL, IMPORT_DB_SIGER, IMPORT_DB_ACTAS
+//   IMPORT_DB_SOLICITUDES, IMPORT_DB_CARTERA, IMPORT_DB_HRSM, IMPORT_DB_BASES, IMPORT_DB_COMERCIAL, IMPORT_DB_SIGER
 // Las apps cuya variable falte se omiten. IMPORT_PGSSL=true si esas bases exigen SSL.
 //
 //   node scripts/importarUsuarios.js            # simulacro
@@ -12,7 +12,7 @@
 require('dotenv').config();
 const { Client } = require('pg');
 
-const APPS = ['solicitudes', 'cartera', 'hrsm', 'bases', 'comercial', 'siger', 'actas'];
+const APPS = ['solicitudes', 'cartera', 'hrsm', 'bases', 'comercial', 'siger'];
 const aplicar = process.argv.includes('--aplicar');
 // Los correos mal escritos en las apps ("gmail,com", espacios...) no se importan: se listan para corregirlos en su app.
 const CORREO_VALIDO = /^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/;

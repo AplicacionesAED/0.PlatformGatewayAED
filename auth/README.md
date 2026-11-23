@@ -53,7 +53,7 @@ node scripts/importarUsuarios.js            # simulacro
 node scripts/importarUsuarios.js --aplicar  # escribe en la base del portal
 ```
 
-Lee (solo lectura) cada base indicada en `IMPORT_DB_SOLICITUDES`, `IMPORT_DB_CARTERA`, `IMPORT_DB_HRSM`, `IMPORT_DB_BASES`, `IMPORT_DB_COMERCIAL`, `IMPORT_DB_SIGER`, `IMPORT_DB_ACTAS` (ponerlas en el shell, nunca en un archivo del repositorio). Crea a las personas activas y les da acceso directo a las apps donde ya estaban activas. No copia contraseñas: las personas fuera del dominio corporativo reciben una temporal con "Resetear contraseña".
+Lee (solo lectura) cada base indicada en `IMPORT_DB_SOLICITUDES`, `IMPORT_DB_CARTERA`, `IMPORT_DB_HRSM`, `IMPORT_DB_BASES`, `IMPORT_DB_COMERCIAL`, `IMPORT_DB_SIGER` (ponerlas en el shell, nunca en un archivo del repositorio). Crea a las personas activas y les da acceso directo a las apps donde ya estaban activas. No copia contraseñas: las personas fuera del dominio corporativo reciben una temporal con "Resetear contraseña".
 
 ## Despliegue (Coolify)
 
