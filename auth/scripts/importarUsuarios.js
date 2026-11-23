@@ -22,7 +22,7 @@ async function leerPersonasActivas(slug, url) {
   await cliente.connect();
   try {
     await cliente.query('BEGIN READ ONLY');
-    // Algunas apps (SISGER) borran con deleted_at ademas de desactivar con activo.
+    // Algunas apps (SIGER) borran con deleted_at ademas de desactivar con activo.
     const { rows: cols } = await cliente.query("SELECT 1 FROM information_schema.columns WHERE table_name = 'usuarios' AND column_name = 'deleted_at' AND table_schema = current_schema()");
     const sinBorrados = cols.length ? ' AND deleted_at IS NULL' : '';
     const { rows } = await cliente.query(`SELECT email, nombre FROM usuarios WHERE activo = TRUE${sinBorrados}`);

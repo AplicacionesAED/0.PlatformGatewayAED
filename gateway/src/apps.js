@@ -97,7 +97,7 @@ export const APPS = [
     slug: 'siger',
     salud: '/siger/health',
     acento: '#1a8a4a',
-    nombre: 'SISGER',
+    nombre: 'SIGER',
     area: 'Obra',
     descripcion: 'Inspecciones de residuos en obra, hallazgos y seguimiento.',
     icono: Recycle,

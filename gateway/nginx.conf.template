@@ -207,7 +207,7 @@ server {
         proxy_cookie_path / /comercial/;
     }
 
-    # --- SISGER (Sistema de Gestion de Residuos) ---
+    # --- SIGER (Sistema de Gestion de Residuos) ---
     # Mismo patron que Cartera: SIGER_UPSTREAM es el DOMINIO PUBLICO de la app en Coolify (sin https://). La app ya
     # soporta el prefijo (build-arg VITE_BASE_PATH=/siger/; la API queda en /siger/api y el callback de Microsoft en
     # /siger/api/auth/azure/callback).

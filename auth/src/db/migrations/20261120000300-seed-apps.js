@@ -7,7 +7,7 @@ const APPS = [
   ['hrsm', 'Recursos Humanos'],
   ['bases', 'Bases Presupuestales'],
   ['comercial', 'Centro de Aplicaciones Comerciales'],
-  ['siger', 'SISGER'],
+  ['siger', 'SIGER'],
   ['actas', 'Bot de Actas Teams + IA'],
 ];
 

@@ -138,7 +138,7 @@ Conectada igual que Cartera: ruta `/comercial/` en `gateway/nginx.conf.template`
 2. HubSpot: registrar ese `HUBSPOT_REDIRECT_URI` como URL de redireccionamiento de la app (sin esto nadie puede entrar: el login con contraseña esta oculto).
 3. Gateway: definir `COMERCIAL_UPSTREAM` (dominio publico de la app, sin `https://`) **antes** de redeployar el gateway. Sin ella nginx no arranca y se cae todo el portal.
 
-## SISGER
+## SIGER
 
 Conectada igual que Cartera: ruta `/siger/` en `gateway/nginx.conf.template` (con `client_max_body_size 20m` por las fotos de evidencia) y tarjeta `disponible` en `gateway/src/apps.js`. La app se compila con `VITE_BASE_PATH=/siger/` y vive en el proyecto "9. SIGER" de Coolify (Dockerfile en la raíz del repo `9.Siger`, puerto 3001, con su propia base Postgres).
 
