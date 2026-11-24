@@ -15,5 +15,7 @@ router.use('/equipos', require('../modules/equipo/equipo.routes'));
 router.use('/apps', require('../modules/app/app.routes'));
 router.use('/accesos', require('../modules/acceso/acceso.routes'));
 router.use('/auditoria', require('../modules/auditoria/auditoria.routes'));
+// De servidor a servidor: una app da de alta a su gente (llave PORTAL_SERVICE_KEY_<APP>).
+router.use('/servicio/:app', require('../modules/servicio/servicio.routes'));
 
 module.exports = router;

@@ -52,11 +52,25 @@ Sin `PORTAL_JWT_PRIVATE_KEY_B64` en desarrollo se genera una llave efímera (las
 ## Importar las personas actuales de las apps
 
 ```
-node scripts/importarUsuarios.js            # simulacro
-node scripts/importarUsuarios.js --aplicar  # escribe en la base del portal
+node scripts/importarUsuarios.js                        # simulacro
+node scripts/importarUsuarios.js --aplicar              # escribe en la base del portal
+node scripts/importarUsuarios.js --apps=hrsm --aplicar  # solo RR.HH.
 ```
 
-Lee (solo lectura) cada base indicada en `IMPORT_DB_SOLICITUDES`, `IMPORT_DB_CARTERA`, `IMPORT_DB_HRSM`, `IMPORT_DB_BASES`, `IMPORT_DB_COMERCIAL`, `IMPORT_DB_SIGER` (ponerlas en el shell, nunca en un archivo del repositorio). Crea a las personas activas y les da acceso directo a las apps donde ya estaban activas. No copia contraseñas: las personas fuera del dominio corporativo reciben una temporal con "Resetear contraseña".
+Lee (solo lectura) cada base indicada en `IMPORT_DB_SOLICITUDES`, `IMPORT_DB_CARTERA`, `IMPORT_DB_HRSM`, `IMPORT_DB_BASES`, `IMPORT_DB_COMERCIAL`, `IMPORT_DB_SIGER` (ponerlas en el shell, nunca en un archivo del repositorio). Crea a las personas activas y les da acceso directo a las apps donde ya estaban activas. Contraseñas: solo de RR.HH. (mismo bcrypt que el portal) se copia el hash y si debe cambiarla, a quien no sea de dominio corporativo y no tenga ya contraseña en el portal; así sus ~700 personas siguen entrando con la suya. Las demás apps no copian contraseñas: las personas fuera del dominio corporativo reciben una temporal con "Restablecer contraseña".
+
+## API de servicio (`/api/servicio/:app`)
+
+Para que una app dé de alta a su propia gente sin pasar por TI (hoy RR.HH., donde cada empleado tiene cuenta). Se habilita por app con `PORTAL_SERVICE_KEY_<APP>` (p. ej. `PORTAL_SERVICE_KEY_HRSM`), que la app manda en la cabecera `X-Portal-Service-Key`; `X-Portal-Solicitado-Por` (opcional) guarda en la auditoría quién lo pidió dentro de la app.
+
+| Ruta (`POST`) | Qué hace |
+|---|---|
+| `/personas` `{ email, nombre }` | Crea a la persona (sin contraseña) si no existe y le da acceso a la app |
+| `/personas/quitar-acceso` `{ email }` | Quita el acceso directo a la app |
+| `/personas/cambiar-correo` `{ anterior, nuevo, nombre }` | Renombra la cuenta (conserva la contraseña) si es solo de esta app; si no, da de alta el correo nuevo y quita la app al viejo |
+| `/personas/password-temporal` `{ email }` | Contraseña temporal (una sola vez, obliga a cambiarla) |
+
+Límites: solo toca el acceso a su propia app, nunca crea administradores, y nombre, correo o contraseña solo de personas que no son administradoras y no tienen acceso a otra app (ni directo ni por equipo). No reactiva a alguien que TI desactivó. Pruebas: `test/servicio.test.js`.
 
 ## Despliegue (Coolify)
 
