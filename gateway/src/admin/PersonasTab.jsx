@@ -4,10 +4,10 @@ import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
 import { coincide, fijarMiembros, normalizar, useAbrirPersona, useDatos } from './datos.jsx';
-import { ModalTemporal } from './FichaPersona.jsx';
+import { ModalTemporal, UltimaActividad } from './FichaPersona.jsx';
 import { Avatar, MiniApp } from './colores.jsx';
 import SelectorApp from './SelectorApp.jsx';
-import { formatoCorto, formatoFecha } from './useCarga.js';
+import { enLinea, formatoFecha } from './useCarga.js';
 import s from './Admin.module.css';
 
 // Como entra la persona, en una sola linea (la ficha muestra el detalle completo).
@@ -232,6 +232,7 @@ export default function PersonasTab() {
       ['todas', 'Todas', () => true],
       ['activas', 'Activas', (u) => u.activo],
       ['inactivas', 'Inactivas', (u) => !u.activo],
+      ['enLinea', 'En línea', enLinea],
       ['admins', 'Administradores', (u) => u.esAdmin],
       ['sinApps', 'Sin aplicaciones', (u) => u.activo && ix.appsDe(u).length === 0],
       ['nunca', 'Nunca han entrado', (u) => !u.ultimoLogin],
@@ -351,7 +352,7 @@ export default function PersonasTab() {
               <th scope="col">Estado</th>
               <th scope="col">Ingreso con</th>
               <th scope="col">Aplicaciones</th>
-              <th scope="col">Último ingreso</th>
+              <th scope="col">Última actividad</th>
               <th scope="col"><span className={s.soloLectores}>Abrir</span></th>
             </tr>
           </thead>
@@ -396,8 +397,8 @@ export default function PersonasTab() {
                       <span className={s.ninguna}>Ninguna</span>
                     )}
                   </td>
-                  <td className={s.nowrap} title={formatoFecha(p.ultimoLogin) ?? undefined}>
-                    {formatoCorto(p.ultimoLogin) ?? <span className={s.ninguna}>Nunca</span>}
+                  <td className={s.nowrap} title={p.ultimaActividad ? `${formatoFecha(p.ultimaActividad)} · último inicio de sesión: ${formatoFecha(p.ultimoLogin) ?? 'nunca'}` : undefined}>
+                    <UltimaActividad p={p} />
                   </td>
                   <td className={s.celdaFlecha}>
                     <ChevronRight size={18} aria-hidden="true" />

@@ -21,6 +21,7 @@ function serializar(u) {
     debeCambiarPassword: u.debe_cambiar_password,
     microsoftVinculado: Boolean(u.microsoft_id),
     ultimoLogin: u.ultimo_login,
+    ultimaActividad: u.ultima_actividad,
     equipos: (u.equipos ?? []).map((e) => ({ id: e.id, nombre: e.nombre })),
   };
 }

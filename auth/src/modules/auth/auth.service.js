@@ -62,6 +62,17 @@ async function suplantadorVigente(id) {
   return admin?.activo && admin.es_admin ? admin : null;
 }
 
+// Ultima actividad: se marca al entrar, al renovar la sesion (cada app la renueva mientras se usa) y al abrir el portal.
+// Lo que hace un administrador suplantando no cuenta como actividad de la persona. Fuera del login se escribe a lo sumo
+// cada ACTIVIDAD_CADA_MS para no tocar la base en cada /me.
+const ACTIVIDAD_CADA_MS = 5 * 60 * 1000;
+async function marcarActividad(usuario, { suplantado = false, forzar = false } = {}) {
+  if (suplantado) return;
+  const ahora = new Date();
+  if (!forzar && usuario.ultima_actividad && ahora - usuario.ultima_actividad < ACTIVIDAD_CADA_MS) return;
+  await usuario.update({ ultima_actividad: ahora });
+}
+
 const revocarSesiones = (usuarioId) =>
   RefreshToken.update({ revocado: true, revocado_en: new Date() }, { where: { usuario_id: usuarioId, revocado: false } });
 
@@ -88,7 +99,8 @@ async function login({ email, password }, ctx) {
     throw new ApiError(401, CREDENCIALES_INVALIDAS);
   }
 
-  await usuario.update({ intentos_fallidos: 0, bloqueado_hasta: null, ultimo_login: new Date() });
+  const ahora = new Date();
+  await usuario.update({ intentos_fallidos: 0, bloqueado_hasta: null, ultimo_login: ahora, ultima_actividad: ahora });
   await auditoria.registrar({ ...ctx, actorId: usuario.id, accion: 'login.ok', entidad: 'usuario', entidadId: usuario.id, detalle: { metodo: 'password' } });
   return crearSesion(usuario, ctx);
 }
@@ -121,7 +133,8 @@ async function loginMicrosoft({ microsoftId, email, nombre }, ctx) {
   }
 
   if (esAdminInicial(usuario.email) && !usuario.es_admin) await usuario.update({ es_admin: true });
-  await usuario.update({ ultimo_login: new Date() });
+  const ahora = new Date();
+  await usuario.update({ ultimo_login: ahora, ultima_actividad: ahora });
   await auditoria.registrar({ ...ctx, actorId: usuario.id, accion: 'login.ok', entidad: 'usuario', entidadId: usuario.id, detalle: { metodo: 'microsoft' } });
   return crearSesion(usuario, ctx);
 }
@@ -161,6 +174,7 @@ async function refrescar(token, ctx) {
   }
 
   await fila.update({ revocado: true, revocado_en: new Date() });
+  await marcarActividad(usuario, { suplantado: Boolean(fila.suplantado_por), forzar: true });
   return crearSesion(usuario, ctx, suplantacion);
 }
 
@@ -214,4 +228,4 @@ async function cambiarPassword(usuario, { passwordActual, passwordNueva }, ctx) 
   return crearSesion(usuario, ctx);
 }
 
-module.exports = { login, loginMicrosoft, refrescar, logout, cambiarPassword, perfil, revocarSesiones, suplantar, terminarSuplantacion };
+module.exports = { login, loginMicrosoft, refrescar, logout, cambiarPassword, perfil, revocarSesiones, suplantar, terminarSuplantacion, marcarActividad };

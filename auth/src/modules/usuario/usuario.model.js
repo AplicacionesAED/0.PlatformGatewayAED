@@ -25,6 +25,8 @@ const Usuario = sequelize.define(
     intentos_fallidos: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0 },
     bloqueado_hasta: { type: DataTypes.DATE, allowNull: true },
     ultimo_login: { type: DataTypes.DATE, allowNull: true },
+    // Ultimo uso (login, renovacion de sesion o entrada al portal); ver auth.service.js#marcarActividad.
+    ultima_actividad: { type: DataTypes.DATE, allowNull: true },
   },
   { tableName: 'usuarios', underscored: true, createdAt: 'creado_en', updatedAt: 'actualizado_en' }
 );

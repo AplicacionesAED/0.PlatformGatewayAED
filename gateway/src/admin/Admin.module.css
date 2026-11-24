@@ -964,6 +964,15 @@ section[aria-label] {
   color: var(--color-danger-ink);
 }
 
+/* En linea: el punto verde con un halo, para distinguirlo de "Activa" de un vistazo. */
+.enLinea::before {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--t) 25%, transparent);
+}
+
+.actividadRelativa {
+  font-size: var(--text-data-size);
+}
+
 .admin {
   display: inline-flex;
   align-items: center;

@@ -125,6 +125,41 @@ describe('portal-auth (HTTP)', () => {
     });
   });
 
+  describe('última actividad', () => {
+    const actividad = async (id) => (await Usuario.findByPk(id)).ultima_actividad;
+    const hace = (min) => new Date(Date.now() - min * 60 * 1000);
+
+    it('se marca al entrar, al renovar la sesión y al abrir el portal (este, a lo sumo cada 5 minutos)', async () => {
+      const ana = await persona('ana@gmail.test');
+      const { c } = await entrar('ana@gmail.test');
+      const alEntrar = await actividad(ana.id);
+      assert.ok(alEntrar && Date.now() - alEntrar < 5000);
+      assert.equal((await Usuario.findByPk(ana.id)).ultimo_login.getTime(), alEntrar.getTime());
+
+      await Usuario.update({ ultima_actividad: hace(30) }, { where: { id: ana.id } });
+      await c.post('/api/auth/refresh');
+      assert.ok(Date.now() - (await actividad(ana.id)) < 5000);
+      // El ultimo inicio de sesion no cambia al renovar.
+      assert.equal((await Usuario.findByPk(ana.id)).ultimo_login.getTime(), alEntrar.getTime());
+
+      await Usuario.update({ ultima_actividad: hace(2) }, { where: { id: ana.id } });
+      await c.get('/api/me');
+      assert.ok(Date.now() - (await actividad(ana.id)) > 60 * 1000); // reciente: no se reescribe
+      await Usuario.update({ ultima_actividad: hace(10) }, { where: { id: ana.id } });
+      await c.get('/api/me');
+      assert.ok(Date.now() - (await actividad(ana.id)) < 5000);
+    });
+
+    it('el panel la muestra junto al último inicio de sesión', async () => {
+      await persona('adm@gmail.test', { es_admin: true });
+      const ana = await persona('ana@gmail.test', { ultima_actividad: hace(3) });
+      const { c } = await entrar('adm@gmail.test');
+      const fila = (await c.get('/api/usuarios')).body.data.find((u) => u.id === ana.id);
+      assert.equal(new Date(fila.ultimaActividad).getTime(), (await actividad(ana.id)).getTime());
+      assert.equal(fila.ultimoLogin, null);
+    });
+  });
+
   describe('renovación de la sesión', () => {
     it('rota el token: el nuevo sirve y el viejo ya no', async () => {
       await persona('ana@gmail.test');
@@ -274,6 +309,7 @@ describe('portal-auth (HTTP)', () => {
 
       // Ana no figura como si hubiera entrado; la auditoria lo anota a nombre del administrador.
       assert.equal((await Usuario.findByPk(ana.id)).ultimo_login, null);
+      assert.equal((await Usuario.findByPk(ana.id)).ultima_actividad, null);
       const acciones = await Auditoria.findAll({ where: { actor_id: adm.id, entidad_id: String(ana.id) }, order: [['id', 'ASC']] });
       assert.deepEqual(acciones.map((a) => a.accion), ['sesion.suplantar', 'sesion.suplantar-fin']);
     });

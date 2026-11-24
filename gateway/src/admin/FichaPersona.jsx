@@ -7,8 +7,15 @@ import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../compone
 import { ACCIONES, describir } from './auditoriaTexto.js';
 import { fijarMiembros, useDatos } from './datos.jsx';
 import { Avatar, IconoApp, IconoEquipo, colorApp, tonoAccion } from './colores.jsx';
-import { formatoFecha } from './useCarga.js';
+import { enLinea, formatoFecha, formatoRelativo } from './useCarga.js';
 import s from './Admin.module.css';
+
+// Ultima actividad con punto verde si esta en linea (activa en la ultima hora). Se usa en la tabla y en la ficha.
+export function UltimaActividad({ p }) {
+  if (!p.ultimaActividad) return <span className={s.ninguna}>Nunca</span>;
+  if (enLinea(p)) return <span className={`${s.estado} ${s.estadoOk} ${s.enLinea}`}>En línea</span>;
+  return <span className={s.actividadRelativa}>{formatoRelativo(p.ultimaActividad)}</span>;
+}
 
 // La contraseña temporal se muestra UNA vez: el servicio no la guarda en claro y no hay forma de volver a verla.
 export function ModalTemporal({ datos, onCerrar }) {
@@ -217,7 +224,11 @@ export default function FichaPersona({ id, onCerrar }) {
               <div className={s.fichaHeroTexto}>
                 <span className={s.fichaHeroEmail}>{p.email}</span>
                 <InsigniasPersona p={p} />
-                <span className={s.fichaHeroDato}>Último ingreso: {formatoFecha(p.ultimoLogin) ?? 'nunca'}</span>
+                <span className={s.fichaHeroDato}>
+                  Última actividad: <UltimaActividad p={p} />
+                  {p.ultimaActividad && !enLinea(p) && <> ({formatoFecha(p.ultimaActividad)})</>}
+                </span>
+                <span className={s.fichaHeroDato}>Último inicio de sesión: {formatoFecha(p.ultimoLogin) ?? 'nunca'}</span>
               </div>
             </div>
 

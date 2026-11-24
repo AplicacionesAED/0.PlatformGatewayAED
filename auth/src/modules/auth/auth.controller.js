@@ -49,7 +49,10 @@ const terminarSuplantacion = asyncHandler(async (req, res) => {
   return ok(res, perfil);
 });
 
-const me = asyncHandler(async (req, res) => ok(res, await service.perfil(req.usuario, req.suplantador)));
+const me = asyncHandler(async (req, res) => {
+  await service.marcarActividad(req.usuario, { suplantado: Boolean(req.suplantador) });
+  return ok(res, await service.perfil(req.usuario, req.suplantador));
+});
 
 // Las apps descargan esta llave publica para verificar las sesiones; cambia solo al rotar la llave.
 const jwks = (req, res) => {
