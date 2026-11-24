@@ -48,7 +48,9 @@ async function registrar(app, { email, nombre }, ctx) {
     usuario = await Usuario.create({ email: correo, nombre });
     await auditoria.registrar({ ...ctxBase(ctx), accion: 'usuario.crear', entidad: 'usuario', entidadId: usuario.id, detalle: { email: correo, servicio: app.slug } });
   } else if (usuario.nombre !== nombre && (await gestionable(usuario, app))) {
+    const detalle = { ...auditoria.cambiosConAntes(usuario, { nombre }), servicio: app.slug };
     await usuario.update({ nombre });
+    await auditoria.registrar({ ...ctxBase(ctx), accion: 'usuario.actualizar', entidad: 'usuario', entidadId: usuario.id, detalle });
   }
   await acceso.conceder({ appId: app.id, usuarioId: usuario.id, gestionadoPor: app.slug }, ctxBase(ctx));
   await registro(ctx, app, 'servicio.registrar', { email: correo, nuevo });
@@ -77,7 +79,7 @@ async function cambiarCorreo(app, { anterior, nuevo, nombre }, ctx) {
     // Con otro correo, la cuenta de Microsoft vinculada ya no corresponde: se desvincula y se cierran sus sesiones.
     await viejo.update({ email: nuevoCorreo, nombre, microsoft_id: null, microsoft_email: null });
     await authService.revocarSesiones(viejo.id);
-    await auditoria.registrar({ ...ctxBase(ctx), accion: 'usuario.actualizar', entidad: 'usuario', entidadId: viejo.id, detalle: { email: nuevoCorreo, anterior: viejoCorreo, servicio: app.slug } });
+    await auditoria.registrar({ ...ctxBase(ctx), accion: 'usuario.actualizar', entidad: 'usuario', entidadId: viejo.id, detalle: { email: nuevoCorreo, nombre, antes: { email: viejoCorreo, nombre: viejo.nombre }, servicio: app.slug } });
     await registro(ctx, app, 'servicio.cambiar-correo', { email: nuevoCorreo, anterior: viejoCorreo, renombrada: true });
     return { id: viejo.id, email: nuevoCorreo, nombre, activo: viejo.activo, nuevo: false };
   }

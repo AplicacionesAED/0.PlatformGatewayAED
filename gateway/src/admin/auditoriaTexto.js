@@ -19,6 +19,21 @@ export const ACCIONES = {
   'acceso.conceder': 'Acceso concedido',
   'acceso.revocar': 'Acceso quitado',
   'app.actualizar': 'Aplicación modificada',
+  'servicio.registrar': 'Alta desde una aplicación',
+  'servicio.quitar-acceso': 'Acceso quitado desde una aplicación',
+  'servicio.cambiar-correo': 'Correo cambiado desde una aplicación',
+  'servicio.password-temporal': 'Contraseña temporal desde una aplicación',
+};
+
+// Campos simples: como se llaman y como se muestra su valor. Con `antes` en el detalle salen como "valor viejo → nuevo".
+const CAMPOS = {
+  esAdmin: ['Administrador', (v) => siNo(v)],
+  es_admin: ['Administrador', (v) => siNo(v)],
+  activo: ['Activa', (v) => siNo(v)],
+  activa: ['Activa', (v) => siNo(v)],
+  nombre: ['Nombre', (v) => v],
+  descripcion: ['Descripción', (v) => v || '(vacía)'],
+  email: ['Correo', (v) => v],
 };
 
 const METODOS = { password: 'contraseña', microsoft: 'Microsoft' };
@@ -36,19 +51,29 @@ export function describir(f, ix) {
   if (f.entidad === 'usuario' && f.entidad_id && Number(f.entidad_id) !== f.actor_id) partes.push(`Persona: ${persona(f.entidad_id)}`);
   if (f.entidad === 'equipo' && f.entidad_id && !f.detalle?.nombre) partes.push(`Equipo: ${equipo(f.entidad_id)}`);
 
+  const lista = (ids) => `${ids.slice(0, 5).map(persona).join(', ')}${ids.length > 5 ? ` y ${ids.length - 5} más` : ''}`;
+  const antes = f.detalle?.antes ?? {};
+  // Registros viejos de miembros (sin agregados/quitados): se muestra la lista completa como antes.
+  const conDiferencia = Array.isArray(f.detalle?.agregados);
+
   for (const [k, v] of Object.entries(f.detalle ?? {})) {
-    if (v === undefined || v === null) continue;
-    if (k === 'app' || k === 'slug') partes.push(`Aplicación: ${app(v)}`);
+    if (v === undefined || v === null || k === 'antes') continue;
+    if (CAMPOS[k]) {
+      const [etiqueta, valor] = CAMPOS[k];
+      partes.push(k in antes ? `${etiqueta}: ${valor(antes[k]) ?? '—'} → ${valor(v)}` : `${etiqueta}: ${valor(v)}`);
+    } else if (k === 'app' || k === 'slug') partes.push(`Aplicación: ${app(v)}`);
     else if (k === 'usuarioId') partes.push(`Persona: ${persona(v)}`);
     else if (k === 'equipoId') partes.push(`Equipo: ${equipo(v)}`);
     else if (k === 'usuarioIds') {
-      const nombres = v.map(persona);
-      partes.push(nombres.length === 0 ? 'Sin miembros' : `Miembros (${nombres.length}): ${nombres.slice(0, 5).join(', ')}${nombres.length > 5 ? ` y ${nombres.length - 5} más` : ''}`);
-    } else if (k === 'esAdmin' || k === 'es_admin') partes.push(`Administrador: ${siNo(v)}`);
-    else if (k === 'activo' || k === 'activa') partes.push(`Activa: ${siNo(v)}`);
-    else if (k === 'nombre') partes.push(`Nombre: ${v}`);
-    else if (k === 'descripcion') partes.push(`Descripción: ${v}`);
-    else if (k === 'email') partes.push(`Correo: ${v}`);
+      if (conDiferencia) partes.push(`Quedan ${v.length} ${v.length === 1 ? 'miembro' : 'miembros'}`);
+      else partes.push(v.length === 0 ? 'Sin miembros' : `Miembros (${v.length}): ${lista(v)}`);
+    } else if (k === 'agregados') {
+      if (v.length) partes.push(`Agregados (${v.length}): ${lista(v)}`);
+    } else if (k === 'quitados') {
+      if (v.length) partes.push(`Quitados (${v.length}): ${lista(v)}`);
+    } else if (k === 'servicio') partes.push(`Desde ${app(v)}`);
+    else if (k === 'solicitadoPor') partes.push(`Pedido por ${v}`);
+    else if (k === 'anterior') partes.push(`Correo anterior: ${v}`);
     else if (k === 'metodo') partes.push(`Con ${METODOS[v] ?? v}`);
     else if (k === 'motivo') partes.push(`Motivo: ${MOTIVOS[v] ?? v}`);
     else if (k === 'hasta') partes.push(`Hasta las ${new Date(v).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Bogota' })}`);

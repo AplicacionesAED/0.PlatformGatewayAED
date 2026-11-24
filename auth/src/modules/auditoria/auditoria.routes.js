@@ -7,7 +7,8 @@ const { requireAuth, requireAdmin } = require('../../middlewares/auth');
 const service = require('./auditoria.service');
 
 const consultaSchema = z.object({
-  limit: z.coerce.number().int().min(1).max(200).default(50),
+  // Hasta 1000 por pagina: el panel exporta a Excel pidiendo paginas grandes.
+  limit: z.coerce.number().int().min(1).max(1000).default(50),
   offset: z.coerce.number().int().min(0).default(0),
   accion: z.string().trim().max(60).optional(),
   actorId: z.coerce.number().int().positive().optional(),
@@ -18,8 +19,16 @@ const consultaSchema = z.object({
   hasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
+const alertasSchema = z.object({ dias: z.coerce.number().int().min(1).max(90).default(7) });
+
 const router = express.Router();
 router.use(requireAuth, requireAdmin);
+
+router.get(
+  '/alertas',
+  validate(alertasSchema, 'query'),
+  asyncHandler(async (req, res) => ok(res, await service.alertas(req.query)))
+);
 
 router.get(
   '/',

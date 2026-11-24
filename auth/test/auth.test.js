@@ -511,7 +511,60 @@ describe('portal-auth (HTTP)', () => {
       assert.equal(r.body.data.length, 1);
       assert.equal(r.body.data[0].actor.email, 'adm@gmail.test');
       assert.ok(r.body.meta.total >= 1);
-      assert.equal((await c.get('/api/auditoria?limit=999')).status, 422);
+      assert.equal((await c.get('/api/auditoria?limit=1000')).status, 200); // paginas grandes para exportar
+      assert.equal((await c.get('/api/auditoria?limit=1001')).status, 422);
+    });
+
+    it('guarda el antes y el después de cada modificación, y quién entró y salió de un equipo', async () => {
+      await persona('adm@gmail.test', { es_admin: true });
+      const ana = await persona('ana@gmail.test', { nombre: 'Ana' });
+      const beto = await persona('beto@gmail.test');
+      const { c } = await entrar('adm@gmail.test');
+      const ultimo = async (accion) => (await c.get(`/api/auditoria?accion=${accion}&limit=1`)).body.data[0].detalle;
+
+      await c.patch(`/api/usuarios/${ana.id}`, { nombre: 'Ana Pérez', activo: false, esAdmin: false });
+      // es_admin ya era false: no se anota.
+      assert.deepEqual(await ultimo('usuario.actualizar'), { nombre: 'Ana Pérez', activo: false, antes: { nombre: 'Ana', activo: true } });
+
+      const eq = (await c.post('/api/equipos', { nombre: 'Obra' })).body.data;
+      await c.patch(`/api/equipos/${eq.id}`, { nombre: 'Obra Norte', descripcion: 'Frente 1' });
+      assert.deepEqual(await ultimo('equipo.actualizar'), { nombre: 'Obra Norte', descripcion: 'Frente 1', antes: { nombre: 'Obra', descripcion: null } });
+
+      await c.put(`/api/equipos/${eq.id}/miembros`, { usuarioIds: [ana.id] });
+      await c.put(`/api/equipos/${eq.id}/miembros`, { usuarioIds: [beto.id] });
+      assert.deepEqual(await ultimo('equipo.miembros'), { usuarioIds: [beto.id], agregados: [beto.id], quitados: [ana.id] });
+      // A Ana la sacaron: el filtro por persona lo encuentra aunque ya no este en la lista final.
+      const deAna = (await c.get(`/api/auditoria?usuarioId=${ana.id}&accion=equipo.miembros`)).body.meta.total;
+      assert.equal(deAna, 2);
+
+      const cartera = await appId('cartera');
+      await c.patch(`/api/apps/${cartera}`, { activa: false });
+      assert.deepEqual(await ultimo('app.actualizar'), { slug: 'cartera', activa: false, antes: { activa: true } });
+    });
+
+    it('resume las alertas de seguridad de los últimos días', async () => {
+      await persona('adm@gmail.test', { es_admin: true });
+      const ana = await persona('ana@gmail.test');
+      for (let i = 0; i < 3; i += 1) await entrar('ana@gmail.test', 'Mala-clave1!');
+      for (let i = 0; i < 4; i += 1) await entrar('nadie@gmail.test', 'Mala-clave1!');
+      await entrar('beto@gmail.test', 'Mala-clave1!'); // un solo fallo: no aparece en los repetidos
+      await Auditoria.create({ accion: 'sesion.reuso', actor_id: ana.id, entidad: 'usuario', entidad_id: String(ana.id) });
+      await Auditoria.create({ accion: 'login.bloqueado', actor_id: ana.id, creado_en: new Date(Date.now() - 10 * 24 * 3600 * 1000) });
+
+      const { c } = await entrar('adm@gmail.test');
+      const r = (await c.get('/api/auditoria/alertas')).body.data;
+      assert.equal(r.dias, 7);
+      assert.equal(r.sesionReuso, 1);
+      assert.equal(r.bloqueos, 0); // fue hace 10 dias
+      assert.equal(r.fallidos, 8);
+      assert.deepEqual(r.repetidos.map((x) => [x.email, x.intentos, x.usuarioId]), [
+        ['nadie@gmail.test', 4, null],
+        ['ana@gmail.test', 3, ana.id],
+      ]);
+      assert.equal((await c.get('/api/auditoria/alertas?dias=30')).body.data.bloqueos, 1);
+      assert.equal((await c.get('/api/auditoria/alertas?dias=0')).status, 422);
+      const { c: comun } = await entrar('ana@gmail.test');
+      assert.equal((await comun.get('/api/auditoria/alertas')).status, 403);
     });
 
     it('filtra la auditoría por persona (lo que hizo y lo que se hizo sobre ella) y por fechas', async () => {

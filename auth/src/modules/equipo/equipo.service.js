@@ -34,8 +34,9 @@ async function actualizar(id, { nombre, descripcion }, ctx) {
   const cambios = {};
   if (nombre !== undefined) cambios.nombre = nombre;
   if (descripcion !== undefined) cambios.descripcion = descripcion;
+  const detalle = auditoria.cambiosConAntes(equipo, cambios);
   await equipo.update(cambios);
-  await auditoria.registrar({ ...ctx, accion: 'equipo.actualizar', entidad: 'equipo', entidadId: id, detalle: cambios });
+  await auditoria.registrar({ ...ctx, accion: 'equipo.actualizar', entidad: 'equipo', entidadId: id, detalle });
   return serializar(await obtener(id));
 }
 
@@ -48,15 +49,18 @@ async function eliminar(id, ctx) {
 
 // Reemplaza la lista completa de miembros (lo que llega es el resultado final, no una diferencia).
 async function fijarMiembros(id, usuarioIds, ctx) {
-  await obtener(id);
+  const equipo = await obtener(id);
   const ids = [...new Set(usuarioIds)];
+  const antes = new Set(equipo.miembros.map((m) => m.id));
+  const agregados = ids.filter((u) => !antes.has(u));
+  const quitados = [...antes].filter((u) => !ids.includes(u));
   if (ids.length && (await Usuario.count({ where: { id: ids } })) !== ids.length) throw new ApiError(404, 'Alguna de las personas no existe');
 
   await sequelize.transaction(async (transaction) => {
     await EquipoMiembro.destroy({ where: { equipo_id: id }, transaction });
     await EquipoMiembro.bulkCreate(ids.map((usuario_id) => ({ equipo_id: id, usuario_id })), { transaction });
   });
-  await auditoria.registrar({ ...ctx, accion: 'equipo.miembros', entidad: 'equipo', entidadId: id, detalle: { usuarioIds: ids } });
+  await auditoria.registrar({ ...ctx, accion: 'equipo.miembros', entidad: 'equipo', entidadId: id, detalle: { usuarioIds: ids, agregados, quitados } });
   return serializar(await obtener(id));
 }
 

@@ -8,6 +8,7 @@ import AplicacionesTab from './AplicacionesTab.jsx';
 import AuditoriaTab from './AuditoriaTab.jsx';
 import FichaPersona from './FichaPersona.jsx';
 import { AdminDatos, useDatos } from './datos.jsx';
+import { DIAS_ALERTAS, totalAlertas, useAlertas } from './AlertasSeguridad.jsx';
 import s from './Admin.module.css';
 
 const SECCIONES = [
@@ -64,6 +65,8 @@ function Indicadores() {
 
 export default function AdminPage() {
   const { usuario } = useAuth();
+  const alertas = useAlertas();
+  const pendientes = totalAlertas(alertas);
 
   return (
     <AdminDatos>
@@ -90,6 +93,12 @@ export default function AdminPage() {
             {SECCIONES.map(([ruta, nombre, Icono]) => (
               <NavLink key={ruta} to={ruta} className={({ isActive }) => `${s.tab} ${isActive ? s.tabOn : ''}`}>
                 <Icono size={16} aria-hidden="true" /> {nombre}
+                {ruta === 'auditoria' && pendientes > 0 && (
+                  <span className={s.tabAlerta} title={`${pendientes} alertas de seguridad en los últimos ${DIAS_ALERTAS} días`}>
+                    {pendientes}
+                    <span className={s.soloLectores}> alertas de seguridad</span>
+                  </span>
+                )}
               </NavLink>
             ))}
           </nav>
@@ -103,7 +112,7 @@ export default function AdminPage() {
           <Route path="equipos" element={<EquiposTab />} />
           <Route path="aplicaciones" element={<AplicacionesTab />} />
           <Route path="accesos" element={<Navigate to="/admin/aplicaciones" replace />} />
-          <Route path="auditoria" element={<AuditoriaTab />} />
+          <Route path="auditoria" element={<AuditoriaTab alertas={alertas} />} />
           <Route path="*" element={<Navigate to="personas" replace />} />
         </Routes>
       </main>

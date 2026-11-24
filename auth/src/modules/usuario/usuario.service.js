@@ -72,11 +72,12 @@ async function actualizar(id, { nombre, activo, esAdmin }, ctx) {
   if (nombre !== undefined) cambios.nombre = nombre;
   if (activo !== undefined) cambios.activo = activo;
   if (esAdmin !== undefined) cambios.es_admin = esAdmin;
+  const detalle = auditoria.cambiosConAntes(usuario, cambios);
   await usuario.update(cambios);
 
   // Desactivar corta las sesiones abiertas: el acceso se pierde en menos de lo que dura el token de acceso.
   if (activo === false) await authService.revocarSesiones(usuario.id);
-  await auditoria.registrar({ ...ctx, accion: 'usuario.actualizar', entidad: 'usuario', entidadId: usuario.id, detalle: cambios });
+  await auditoria.registrar({ ...ctx, accion: 'usuario.actualizar', entidad: 'usuario', entidadId: usuario.id, detalle });
   return serializar(usuario);
 }
 

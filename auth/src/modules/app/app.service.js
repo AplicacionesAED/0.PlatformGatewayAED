@@ -11,8 +11,9 @@ async function actualizar(id, { nombre, activa }, ctx) {
   const cambios = {};
   if (nombre !== undefined) cambios.nombre = nombre;
   if (activa !== undefined) cambios.activa = activa;
+  const detalle = { slug: app.slug, ...auditoria.cambiosConAntes(app, cambios) };
   await app.update(cambios);
-  await auditoria.registrar({ ...ctx, accion: 'app.actualizar', entidad: 'app', entidadId: id, detalle: { slug: app.slug, ...cambios } });
+  await auditoria.registrar({ ...ctx, accion: 'app.actualizar', entidad: 'app', entidadId: id, detalle });
   return app;
 }
 
