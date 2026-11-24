@@ -27,8 +27,9 @@ function ListaConApps({ filas }) {
   );
 }
 
-// Dialogo comun: ejecuta `accion` y muestra el resultado o el error.
-function DialogoLote({ titulo, icono, tono, descripcion, boton, deshabilitar, accion, onCerrar, children }) {
+// Dialogo comun: ejecuta `accion` y muestra el resultado o el error. `alTerminar` corre tras recargar los datos (p. ej.
+// para preguntar por los accesos directos de quien entro a un equipo).
+function DialogoLote({ titulo, icono, tono, descripcion, boton, deshabilitar, accion, alTerminar, onCerrar, children }) {
   const ix = useDatos();
   const [trabajando, setTrabajando] = useState(false);
   const [error, setError] = useState(null);
@@ -40,6 +41,7 @@ function DialogoLote({ titulo, icono, tono, descripcion, boton, deshabilitar, ac
     try {
       setHecho(await accion());
       await ix.recargar();
+      alTerminar?.();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -127,6 +129,7 @@ export function MoverMiembros({ equipo, personas, onCerrar, onHecho }) {
       boton={modo === 'mover' ? 'Mover' : 'Copiar'}
       deshabilitar={!destino}
       onCerrar={onCerrar}
+      alTerminar={() => ix.preguntarAlEntrar(destino.id, personas.map((p) => p.id).filter((id) => !destino.miembros.some((m) => m.id === id)))}
       accion={async () => {
         const ids = personas.map((p) => p.id);
         await fijarMiembros(destino, [...destino.miembros.map((m) => m.id), ...ids]);
@@ -274,7 +277,7 @@ export function PasarAEquipo({ app, personas, onCerrar, onHecho }) {
 }
 
 // Agregar varias personas pegando sus correos (uno por linea, o separados por coma o punto y coma).
-export function AgregarVarios({ titulo, yaEstan, boton, onAgregar, onCerrar }) {
+export function AgregarVarios({ titulo, yaEstan, boton, onAgregar, alTerminar, onCerrar }) {
   const ix = useDatos();
   const [texto, setTexto] = useState('');
   const porCorreo = useMemo(() => new Map(ix.datos.usuarios.map((u) => [u.email.toLowerCase(), u])), [ix.datos.usuarios]);
@@ -292,6 +295,7 @@ export function AgregarVarios({ titulo, yaEstan, boton, onAgregar, onCerrar }) {
       boton={`${boton} (${nuevas.length})`}
       deshabilitar={!nuevas.length}
       onCerrar={onCerrar}
+      alTerminar={alTerminar && (() => alTerminar(nuevas))}
       accion={async () => {
         await onAgregar(nuevas);
         return `${nuevas.length} ${nuevas.length === 1 ? 'persona agregada' : 'personas agregadas'}.`;

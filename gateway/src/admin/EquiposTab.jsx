@@ -115,13 +115,16 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
   const [lote, setLote] = useState(null); // { tipo: 'quitar' | 'mover' | 'agregar', personas? }
   const [limpieza, setLimpieza] = useState(null); // { app, lista }
 
+  // Devuelve si salio bien.
   async function tras(promesa) {
     setError(null);
     try {
       await promesa;
       await ix.recargar();
+      return true;
     } catch (err) {
       setError(err.message);
+      return false;
     }
   }
 
@@ -205,7 +208,9 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
           etiqueta={`Buscar persona para agregar a ${equipo.nombre}`}
           placeholder="Agregar una persona al equipo…"
           icono={UserPlus}
-          onElegir={(p) => tras(fijarMiembros(equipo, [...ids, p.id]))}
+          onElegir={async (p) => {
+            if (await tras(fijarMiembros(equipo, [...ids, p.id]))) ix.preguntarAlEntrar(equipo.id, [p.id]);
+          }}
         />
         <ListaPaginada
           items={personasMiembro}
@@ -247,6 +252,7 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
           yaEstan={miembros}
           boton="Agregar al equipo"
           onAgregar={(nuevas) => fijarMiembros(equipo, [...ids, ...nuevas.map((p) => p.id)])}
+          alTerminar={(nuevas) => ix.preguntarAlEntrar(equipo.id, nuevas.map((p) => p.id))}
           onCerrar={() => setLote(null)}
         />
       )}

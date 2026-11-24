@@ -125,9 +125,12 @@ function ModalLote({ tipo, personas, onCerrar, onHecho }) {
   async function ejecutar() {
     setError(null);
     let fallos = 0;
+    let entraron = [];
     try {
       if (tipo === 'equipo') {
         const equipo = ix.equipoPorId.get(Number(destino));
+        const yaEstaban = new Set(equipo.miembros.map((m) => m.id));
+        entraron = afectadas.filter((p) => !yaEstaban.has(p.id)).map((p) => p.id);
         setProgreso(0);
         await fijarMiembros(equipo, [...equipo.miembros.map((m) => m.id), ...afectadas.map((p) => p.id)]);
         setProgreso(afectadas.length);
@@ -149,6 +152,7 @@ function ModalLote({ tipo, personas, onCerrar, onHecho }) {
     }
     await ix.recargar();
     onHecho(fallos ? `${fallos} de ${afectadas.length} no se pudieron cambiar. Revisa la auditoría.` : null);
+    if (entraron.length) ix.preguntarAlEntrar(Number(destino), entraron);
   }
 
   const trabajando = progreso !== null;

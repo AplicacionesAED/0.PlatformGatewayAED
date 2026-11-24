@@ -8,6 +8,7 @@ import AplicacionesTab from './AplicacionesTab.jsx';
 import AuditoriaTab from './AuditoriaTab.jsx';
 import FichaPersona from './FichaPersona.jsx';
 import { AdminDatos, useDatos } from './datos.jsx';
+import { DirectoOEquipo } from './Impacto.jsx';
 import { DIAS_ALERTAS, totalAlertas, useAlertas } from './AlertasSeguridad.jsx';
 import s from './Admin.module.css';
 
@@ -34,6 +35,12 @@ function FichaDesdeUrl() {
       }
     />
   );
+}
+
+// Pregunta comun tras agregar personas a un equipo (buscador, "Agregar varios", copiar o mover, ficha, lote).
+function PreguntaAlEntrar() {
+  const ix = useDatos();
+  return ix.alEntrar && ix.datos ? <DirectoOEquipo key={`${ix.alEntrar.equipoId}-${ix.alEntrar.ids.join(',')}`} /> : null;
 }
 
 // Cifras de un vistazo en la cabecera. "Sin aplicaciones" = personas activas que no entran a nada (revisar).
@@ -118,6 +125,7 @@ export default function AdminPage() {
       </main>
 
       <FichaDesdeUrl />
+      <PreguntaAlEntrar />
     </AdminDatos>
   );
 }

@@ -91,7 +91,20 @@ function indexar({ usuarios, equipos, apps, accesos }) {
     return lista;
   };
 
-  return { personaPorId, equipoPorId, appPorId, appPorSlug, directos, deEquipo, origenes, appsDe, gestionadoPor, impactoQuitarApp, impactoEliminarEquipo, redundantes, pierdeAlSalir };
+  // Accesos directos (dados a mano) de `ids` a apps que el equipo ya da: al entrar al equipo quedan con las dos vias.
+  const sobranAlEntrar = (equipoId, ids) => {
+    const lista = [];
+    for (const appId of deEquipo.get(equipoId)?.keys() ?? []) {
+      for (const id of ids) {
+        const accesoId = directos.get(id)?.get(appId);
+        const persona = personaPorId.get(id);
+        if (accesoId && persona && !gestionadoPor(accesoId)) lista.push({ persona, app: appPorId.get(appId), accesoId });
+      }
+    }
+    return lista;
+  };
+
+  return { personaPorId, equipoPorId, appPorId, appPorSlug, directos, deEquipo, origenes, appsDe, gestionadoPor, impactoQuitarApp, impactoEliminarEquipo, redundantes, pierdeAlSalir, sobranAlEntrar };
 }
 
 const Contexto = createContext(null);
@@ -135,8 +148,17 @@ export function AdminDatos({ children }) {
     return () => clearInterval(id);
   }, []);
 
+  // Tras agregar personas a un equipo, AdminPage pregunta si conservan el acceso directo a las apps que el equipo ya da
+  // (ver Impacto.jsx#DirectoOEquipo). Se llama despues de recargar los datos.
+  const [alEntrar, setAlEntrar] = useState(null); // { equipoId, ids }
+  const preguntarAlEntrar = useCallback((equipoId, ids) => setAlEntrar({ equipoId, ids: [...ids] }), []);
+  const cerrarAlEntrar = useCallback(() => setAlEntrar(null), []);
+
   const indices = useMemo(() => (estado.datos ? indexar(estado.datos) : null), [estado.datos]);
-  const valor = useMemo(() => ({ ...estado, ...indices, recargar }), [estado, indices, recargar]);
+  const valor = useMemo(
+    () => ({ ...estado, ...indices, recargar, alEntrar, preguntarAlEntrar, cerrarAlEntrar }),
+    [estado, indices, recargar, alEntrar, preguntarAlEntrar, cerrarAlEntrar]
+  );
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;
 }
 

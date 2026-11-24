@@ -1,11 +1,11 @@
 // Dialogos que muestran las consecuencias ANTES de tocar accesos: quien pierde una app al quitarsela a un equipo, y que
 // accesos directos sobran cuando un equipo ya da la app (limpieza). Los accesos gestionados por una app (p. ej. RR.HH.)
 // nunca se ofrecen para limpiar: esa app los volveria a crear.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CheckCircle2, Eraser, UserMinus } from 'lucide-react';
 import { api } from '../api/client.js';
 import { Aviso, Button, Modal } from '../components/ui.jsx';
-import { Avatar, IconoApp } from './colores.jsx';
+import { Avatar, IconoApp, MiniApp } from './colores.jsx';
 import { quitarAccesos, useDatos } from './datos.jsx';
 import s from './Admin.module.css';
 
@@ -87,6 +87,91 @@ export function ConfirmarQuitarApp({ equipo, app, onCerrar, onHecho }) {
         </section>
       )}
       {error && <Aviso>{error}</Aviso>}
+    </Modal>
+  );
+}
+
+// Despues de agregar personas a un equipo: las que ya tenian dada a mano alguna app que el equipo da eligen si quedan con
+// las dos vias (directo y por equipo) o solo por el equipo. Se muestra solo si hay algo que decidir. Lo abre AdminPage con
+// `ix.alEntrar` ({ equipoId, ids }).
+export function DirectoOEquipo() {
+  const ix = useDatos();
+  const { equipoId, ids } = ix.alEntrar;
+  // La lista se fija al abrir: al quitar accesos los datos se recargan y no debe cambiar lo que se muestra.
+  const [lista] = useState(() => ix.sobranAlEntrar(equipoId, ids));
+  const equipo = ix.equipoPorId.get(equipoId);
+  const [trabajando, setTrabajando] = useState(false);
+  const [resultado, setResultado] = useState(null);
+
+  const nadaQueDecidir = !lista.length || !equipo;
+  const { cerrarAlEntrar } = ix;
+  useEffect(() => {
+    if (nadaQueDecidir) cerrarAlEntrar();
+  }, [nadaQueDecidir, cerrarAlEntrar]);
+  if (nadaQueDecidir) return null;
+
+  // Por persona, las apps que tendria por las dos vias.
+  const porPersona = [];
+  for (const fila of lista) {
+    let p = porPersona.find((x) => x.persona.id === fila.persona.id);
+    if (!p) porPersona.push((p = { persona: fila.persona, apps: [] }));
+    p.apps.push(fila.app);
+  }
+
+  async function soloEquipo() {
+    setTrabajando(true);
+    const fallos = await quitarAccesos(lista.map((f) => f.accesoId));
+    await ix.recargar();
+    setTrabajando(false);
+    const n = lista.length - fallos;
+    setResultado(`${n} ${n === 1 ? 'acceso directo quitado' : 'accesos directos quitados'}.` + (fallos ? ` ${fallos} no se ${fallos === 1 ? 'pudo' : 'pudieron'} quitar.` : ''));
+  }
+
+  return (
+    <Modal
+      abierto
+      onCerrar={trabajando ? () => {} : ix.cerrarAlEntrar}
+      icono={Eraser}
+      titulo="¿Acceso directo o por el equipo?"
+      descripcion={`${porPersona.length === 1 ? 'Esta persona ya tenía' : 'Estas personas ya tenían'} dada a mano alguna aplicación que ${equipo.nombre} también da.`}
+      ancho={600}
+      pie={
+        resultado ? (
+          <Button icono={CheckCircle2} onClick={ix.cerrarAlEntrar}>Listo</Button>
+        ) : (
+          <>
+            <Button variante="secundario" disabled={trabajando} onClick={ix.cerrarAlEntrar}>Mantener las dos</Button>
+            <Button icono={Eraser} cargando={trabajando} onClick={soloEquipo}>
+              Solo por el equipo
+            </Button>
+          </>
+        )
+      }
+    >
+      {resultado ? (
+        <Aviso tipo="ok">{resultado} Siguen entrando por {equipo.nombre}.</Aviso>
+      ) : (
+        <>
+          <ul className={s.resumenPersonas}>
+            {porPersona.slice(0, MAX).map(({ persona, apps }) => (
+              <li key={persona.id}>
+                <Avatar nombre={persona.nombre} />
+                <span>{persona.nombre}</span>
+                <span className={s.miniApps}>
+                  {apps.map((a) => (
+                    <MiniApp key={a.id} app={a} />
+                  ))}
+                </span>
+              </li>
+            ))}
+            {porPersona.length > MAX && <li className={s.sub}>y {porPersona.length - MAX} más</li>}
+          </ul>
+          <p className={s.sub}>
+            <strong>Solo por el equipo</strong>: se quita el acceso directo; si salen de {equipo.nombre}, pierden esas aplicaciones.{' '}
+            <strong>Mantener las dos</strong>: las conservan aunque salgan del equipo. Nadie pierde nada ahora.
+          </p>
+        </>
+      )}
     </Modal>
   );
 }

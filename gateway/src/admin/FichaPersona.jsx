@@ -163,14 +163,17 @@ export default function FichaPersona({ id, onCerrar }) {
     setEquipoNuevo('');
   }, [id]);
 
+  // Devuelve si salio bien.
   async function tras(promesa) {
     setError(null);
     try {
       await promesa;
       await ix.recargar();
       setVersion((v) => v + 1);
+      return true;
     } catch (err) {
       setError(err.message);
+      return false;
     }
   }
 
@@ -205,11 +208,11 @@ export default function FichaPersona({ id, onCerrar }) {
     });
   }
 
-  function agregarAEquipo() {
+  async function agregarAEquipo() {
     const equipo = ix.equipoPorId.get(Number(equipoNuevo));
     if (!equipo) return;
     setEquipoNuevo('');
-    tras(fijarMiembros(equipo, [...equipo.miembros.map((m) => m.id), p.id]));
+    if (await tras(fijarMiembros(equipo, [...equipo.miembros.map((m) => m.id), p.id]))) ix.preguntarAlEntrar(equipo.id, [p.id]);
   }
 
   function quitarDeEquipo(e) {
