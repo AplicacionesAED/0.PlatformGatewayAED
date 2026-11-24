@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, UserPlus, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
+import { ArrowRightLeft, ChevronRight, ClipboardList, UserMinus, UserPlus, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
 import ListaPaginada from './ListaPaginada.jsx';
 import { ConfirmarQuitarApp, OfrecerLimpieza } from './Impacto.jsx';
+import { AgregarVarios, MoverMiembros, QuitarMiembros } from './AccionesLote.jsx';
+import { FILTROS_PERSONA } from './filtrosPersona.js';
 
 const textoPersona = (m) => `${m.nombre} ${m.email}`;
 import { fijarMiembros, useAbrirPersona, useDatos } from './datos.jsx';
@@ -110,6 +112,7 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
   const [error, setError] = useState(null);
   const [pendientes, setPendientes] = useState(() => new Set());
   const [quitandoApp, setQuitandoApp] = useState(null);
+  const [lote, setLote] = useState(null); // { tipo: 'quitar' | 'mover' | 'agregar', personas? }
   const [limpieza, setLimpieza] = useState(null); // { app, lista }
 
   async function tras(promesa) {
@@ -141,7 +144,12 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
 
   const ids = equipo.miembros.map((m) => m.id);
   const miembros = new Set(ids);
-  const ordenados = useMemo(() => [...equipo.miembros].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [equipo.miembros]);
+  // Miembros como personas completas (estado, ultimo ingreso) para los filtros de la lista.
+  const personasMiembro = useMemo(
+    () => equipo.miembros.map((m) => ix.personaPorId.get(m.id) ?? m).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')),
+    [equipo.miembros, ix.personaPorId]
+  );
+  const inactivas = personasMiembro.filter((u) => u.activo === false);
 
   return (
     <Modal abierto onCerrar={onCerrar} titulo={equipo.nombre} ancho={760} lateral>
@@ -178,7 +186,19 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
       </section>
 
       <section className={s.fichaSeccion} aria-labelledby="equipo-miembros">
-        <h3 id="equipo-miembros">Miembros ({equipo.miembros.length})</h3>
+        <div className={s.fichaSeccionCabecera}>
+          <h3 id="equipo-miembros">Miembros ({equipo.miembros.length})</h3>
+          <span className={s.fichaSeccionAcciones}>
+            {inactivas.length > 0 && (
+              <Button variante="secundario" icono={UserMinus} onClick={() => setLote({ tipo: 'quitar', personas: inactivas })}>
+                Quitar {inactivas.length} {inactivas.length === 1 ? 'inactiva' : 'inactivas'}
+              </Button>
+            )}
+            <Button variante="secundario" icono={ClipboardList} onClick={() => setLote({ tipo: 'agregar' })}>
+              Agregar varios
+            </Button>
+          </span>
+        </div>
         <BuscarPersona
           personas={ix.datos?.usuarios ?? []}
           excluir={miembros}
@@ -188,27 +208,48 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
           onElegir={(p) => tras(fijarMiembros(equipo, [...ids, p.id]))}
         />
         <ListaPaginada
-          items={ordenados}
+          items={personasMiembro}
           etiqueta={`los miembros de ${equipo.nombre}`}
           vacio="Sin miembros."
           textoDe={textoPersona}
-          renderFila={(m) => {
-            const u = ix.personaPorId.get(m.id);
-            return (
-              <li key={m.id} className={u?.activo === false ? s.inactiva : undefined}>
-                <div className={s.personaCelda}>
-                  <Avatar nombre={m.nombre} />
-                  <span>
-                    <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(m.id)}>{m.nombre}</button>
-                    <span className={s.sub}>{m.email}{u?.activo === false ? ' · inactiva' : ''}</span>
-                  </span>
-                </div>
-                <BotonIcono icono={X} etiqueta={`Sacar a ${m.nombre} de ${equipo.nombre}`} onClick={() => tras(fijarMiembros(equipo, ids.filter((id) => id !== m.id)))} />
-              </li>
-            );
-          }}
+          filtros={FILTROS_PERSONA}
+          claseDe={(u) => (u.activo === false ? s.inactiva : '')}
+          acciones={(sel) => (
+            <>
+              <Button variante="secundario" icono={UserMinus} onClick={() => setLote({ tipo: 'quitar', personas: sel })}>
+                Sacar del equipo
+              </Button>
+              <Button variante="secundario" icono={ArrowRightLeft} onClick={() => setLote({ tipo: 'mover', personas: sel })}>
+                Mover o copiar
+              </Button>
+            </>
+          )}
+          renderItem={(u) => (
+            <>
+              <div className={s.personaCelda}>
+                <Avatar nombre={u.nombre} />
+                <span>
+                  <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(u.id)}>{u.nombre}</button>
+                  <span className={s.sub}>{u.email}{u.activo === false ? ' · inactiva' : ''}</span>
+                </span>
+              </div>
+              <BotonIcono icono={X} etiqueta={`Sacar a ${u.nombre} de ${equipo.nombre}`} onClick={() => setLote({ tipo: 'quitar', personas: [u] })} />
+            </>
+          )}
         />
       </section>
+
+      {lote?.tipo === 'quitar' && <QuitarMiembros equipo={equipo} personas={lote.personas} onCerrar={() => setLote(null)} />}
+      {lote?.tipo === 'mover' && <MoverMiembros equipo={equipo} personas={lote.personas} onCerrar={() => setLote(null)} />}
+      {lote?.tipo === 'agregar' && (
+        <AgregarVarios
+          titulo={`Agregar varias personas a ${equipo.nombre}`}
+          yaEstan={miembros}
+          boton="Agregar al equipo"
+          onAgregar={(nuevas) => fijarMiembros(equipo, [...ids, ...nuevas.map((p) => p.id)])}
+          onCerrar={() => setLote(null)}
+        />
+      )}
 
       {quitandoApp && <ConfirmarQuitarApp equipo={equipo} app={quitandoApp} onCerrar={() => setQuitandoApp(null)} />}
       {limpieza && (

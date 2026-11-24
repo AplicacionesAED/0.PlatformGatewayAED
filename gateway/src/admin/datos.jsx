@@ -53,6 +53,18 @@ function indexar({ usuarios, equipos, apps, accesos }) {
     return { pierden, conservan };
   };
 
+  // Apps que `u` perderia al salir de `equipo` (si ademas entra a `destino`, lo que ese equipo da no se pierde).
+  const pierdeAlSalir = (equipo, u, destino = null) => {
+    const perdidas = [];
+    for (const appId of deEquipo.get(equipo.id)?.keys() ?? []) {
+      if (destino && deEquipo.get(destino.id)?.has(appId)) continue;
+      const o = origenes(u).get(appId);
+      if (o?.accesoId || o?.equipos.some((e) => e.id !== equipo.id)) continue;
+      perdidas.push(appPorId.get(appId));
+    }
+    return perdidas;
+  };
+
   // Que pasa si se elimina `equipo`: por persona, las apps que dejaria de tener.
   const impactoEliminarEquipo = (equipo) => {
     const porPersona = [];
@@ -79,7 +91,7 @@ function indexar({ usuarios, equipos, apps, accesos }) {
     return lista;
   };
 
-  return { personaPorId, equipoPorId, appPorId, appPorSlug, directos, deEquipo, origenes, appsDe, gestionadoPor, impactoQuitarApp, impactoEliminarEquipo, redundantes };
+  return { personaPorId, equipoPorId, appPorId, appPorSlug, directos, deEquipo, origenes, appsDe, gestionadoPor, impactoQuitarApp, impactoEliminarEquipo, redundantes, pierdeAlSalir };
 }
 
 const Contexto = createContext(null);

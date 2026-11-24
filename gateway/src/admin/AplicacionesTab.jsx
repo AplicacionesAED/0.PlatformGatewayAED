@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, Eraser, Plus, Trash2, UserPlus, X } from 'lucide-react';
+import { ChevronRight, ClipboardList, Eraser, Plus, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
 import ListaPaginada from './ListaPaginada.jsx';
 import { ConfirmarQuitarApp, OfrecerLimpieza } from './Impacto.jsx';
+import { AgregarVarios, PasarAEquipo, QuitarDirectos } from './AccionesLote.jsx';
+import { FILTROS_PERSONA } from './filtrosPersona.js';
 import { useAbrirPersona, useDatos } from './datos.jsx';
 import { Avatar, IconoApp, IconoEquipo, colorApp } from './colores.jsx';
 import s from './Admin.module.css';
@@ -20,6 +22,7 @@ function FichaApp({ app, onCerrar }) {
   const [quitandoEquipo, setQuitandoEquipo] = useState(null); // equipo
   const [limpieza, setLimpieza] = useState(null); // { lista, motivo }
   const [quitandoGestionado, setQuitandoGestionado] = useState(null); // persona con acceso gestionado por una app
+  const [lote, setLote] = useState(null); // { tipo: 'quitar' | 'equipo' | 'agregar', personas? }
 
   async function tras(promesa) {
     setError(null);
@@ -42,6 +45,18 @@ function FichaApp({ app, onCerrar }) {
   const gestionadas = directas.filter((u) => gestor(u)).length;
   const sobran = ix.redundantes(app.id);
   const sobranIds = new Set(sobran.map((r) => r.persona.id));
+  const inactivas = directas.filter((u) => !u.activo && !gestor(u));
+  // Filtros de la lista: los comunes y, segun el caso, "tambien por equipo" y gestionadas o manuales (solo si hay mezcla).
+  const filtros = [
+    ...FILTROS_PERSONA,
+    { clave: 'equipo', nombre: 'También por equipo', fn: (u) => sobranIds.has(u.id) },
+    ...(gestionadas && gestionadas < directas.length
+      ? [
+          { clave: 'gestionadas', nombre: `Gestionadas por ${nombreGestor(gestor(directas.find((u) => gestor(u))))}`, fn: (u) => Boolean(gestor(u)) },
+          { clave: 'manuales', nombre: 'Dadas a mano', fn: (u) => !gestor(u) },
+        ]
+      : []),
+  ];
 
   // Dar la app a un equipo; si algunos miembros ya la tenian dada a mano, se ofrece dejarla solo por el equipo.
   async function darAEquipo(equipoId) {
@@ -127,7 +142,19 @@ function FichaApp({ app, onCerrar }) {
       </section>
 
       <section className={s.fichaSeccion} aria-labelledby="app-personas">
-        <h3 id="app-personas">Personas con acceso directo ({directas.length})</h3>
+        <div className={s.fichaSeccionCabecera}>
+          <h3 id="app-personas">Personas con acceso directo ({directas.length})</h3>
+          <span className={s.fichaSeccionAcciones}>
+            {inactivas.length > 0 && (
+              <Button variante="secundario" icono={UserMinus} onClick={() => setLote({ tipo: 'quitar', personas: inactivas })}>
+                Quitar {inactivas.length} {inactivas.length === 1 ? 'inactiva' : 'inactivas'}
+              </Button>
+            )}
+            <Button variante="secundario" icono={ClipboardList} onClick={() => setLote({ tipo: 'agregar' })}>
+              Agregar varios
+            </Button>
+          </span>
+        </div>
         {gestionadas > 0 && (
           <p className={s.sub}>
             {gestionadas === directas.length ? 'Todas las gestiona' : `${gestionadas} de ellas las gestiona`} {nombreGestor(gestor(directas.find((u) => gestor(u))))}: se crean y se quitan desde esa aplicación.
@@ -146,8 +173,20 @@ function FichaApp({ app, onCerrar }) {
           etiqueta={`las personas con acceso a ${app.nombre}`}
           vacio="Nadie tiene acceso directo."
           textoDe={textoPersona}
-          renderFila={(u) => (
-            <li key={u.id} className={u.activo ? undefined : s.inactiva}>
+          filtros={filtros}
+          claseDe={(u) => (u.activo ? '' : s.inactiva)}
+          acciones={(sel) => (
+            <>
+              <Button variante="secundario" icono={UserMinus} onClick={() => setLote({ tipo: 'quitar', personas: sel })}>
+                Quitar acceso
+              </Button>
+              <Button variante="secundario" icono={Users} onClick={() => setLote({ tipo: 'equipo', personas: sel })}>
+                Pasar a un equipo
+              </Button>
+            </>
+          )}
+          renderItem={(u) => (
+            <>
               <div className={s.personaCelda}>
                 <Avatar nombre={u.nombre} />
                 <span>
@@ -161,10 +200,24 @@ function FichaApp({ app, onCerrar }) {
                 {sobranIds.has(u.id) && <Insignia tono="aviso">También por equipo</Insignia>}
                 <BotonIcono icono={X} etiqueta={`Quitar ${app.nombre} a ${u.nombre}`} onClick={() => quitarDirecto(u)} />
               </span>
-            </li>
+            </>
           )}
         />
       </section>
+
+      {lote?.tipo === 'quitar' && <QuitarDirectos app={app} personas={lote.personas} onCerrar={() => setLote(null)} />}
+      {lote?.tipo === 'equipo' && <PasarAEquipo app={app} personas={lote.personas} onCerrar={() => setLote(null)} />}
+      {lote?.tipo === 'agregar' && (
+        <AgregarVarios
+          titulo={`Dar ${app.nombre} a varias personas`}
+          yaEstan={conDirecta}
+          boton="Dar acceso"
+          onAgregar={async (nuevas) => {
+            for (const p of nuevas) await api.post('/accesos', { appId: app.id, usuarioId: p.id });
+          }}
+          onCerrar={() => setLote(null)}
+        />
+      )}
 
       {quitandoEquipo && <ConfirmarQuitarApp equipo={quitandoEquipo} app={app} onCerrar={() => setQuitandoEquipo(null)} />}
       {limpieza && <OfrecerLimpieza app={app} lista={limpieza.lista} motivo={limpieza.motivo} onCerrar={() => setLimpieza(null)} />}
