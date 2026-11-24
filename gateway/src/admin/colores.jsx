@@ -84,12 +84,3 @@ export function MiniApp({ app }) {
     </span>
   );
 }
-
-// Insignia de una app con su color (tablas y tarjetas de equipo).
-export function InsigniaApp({ app }) {
-  return (
-    <span className={s.insigniaApp} style={{ '--c': colorApp(app) }}>
-      {app.nombre}
-    </span>
-  );
-}

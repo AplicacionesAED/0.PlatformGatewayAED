@@ -7,7 +7,8 @@ const MAXIMO = 8;
 
 // Buscador para elegir UNA persona (agregar a un equipo, dar una app, filtrar la auditoria). Los resultados se muestran
 // debajo, en el flujo de la pagina, asi funciona igual dentro de un panel o un dialogo.
-export default function BuscarPersona({ personas, excluir, onElegir, etiqueta = 'Buscar persona', placeholder = 'Buscar por nombre o correo…' }) {
+// `icono`: Search por defecto; UserPlus cuando el buscador sirve para AGREGAR (asi no se confunde con el de filtrar la lista).
+export default function BuscarPersona({ personas, excluir, onElegir, etiqueta = 'Buscar persona', placeholder = 'Buscar por nombre o correo…', icono: Icono = Search }) {
   const [q, setQ] = useState('');
   const id = useId();
 
@@ -19,8 +20,8 @@ export default function BuscarPersona({ personas, excluir, onElegir, etiqueta = 
 
   return (
     <div className={s.buscarPersona}>
-      <label className={`${s.buscador} ${s.buscadorBloque}`}>
-        <Search size={18} aria-hidden="true" />
+      <label className={`${s.buscador} ${s.buscadorBloque} ${Icono === Search ? '' : s.buscadorAgregar}`}>
+        <Icono size={18} aria-hidden="true" />
         <input type="search" placeholder={placeholder} value={q} onChange={(e) => setQ(e.target.value)} aria-label={etiqueta} aria-controls={id} />
       </label>
       {q.trim() && (

@@ -22,7 +22,14 @@ export function ModalTemporal({ datos, onCerrar }) {
     }
   }
   return (
-    <Modal abierto={Boolean(datos)} onCerrar={onCerrar} titulo={datos?.titulo ?? ''} pie={<Button onClick={onCerrar}>Listo, ya la anoté</Button>}>
+    <Modal
+      abierto={Boolean(datos)}
+      onCerrar={onCerrar}
+      titulo={datos?.titulo ?? ''}
+      icono={KeyRound}
+      descripcion={datos?.password ? 'Cópiala ahora: no se vuelve a mostrar.' : 'Cuenta corporativa: entra con Microsoft.'}
+      pie={<Button icono={Check} onClick={onCerrar}>Listo, ya la anoté</Button>}
+    >
       {datos?.password ? (
         <>
           <p>
@@ -62,6 +69,8 @@ export function InsigniasPersona({ p }) {
     </div>
   );
 }
+
+const ICONO_CONFIRMAR = { desactivar: Power, reset: KeyRound, hacerAdmin: ShieldCheck, quitarAdmin: ShieldOff, suplantar: LogIn };
 
 const TEXTO_CONFIRMAR = {
   desactivar: (p) => [`Desactivar a ${p.nombre}`, 'Perderá el acceso al portal y a todas las aplicaciones en menos de una hora. Sus sesiones abiertas se cierran de inmediato.', 'Desactivar'],
@@ -200,7 +209,7 @@ export default function FichaPersona({ id, onCerrar }) {
 
   return (
     <>
-      <Modal abierto={abierto} onCerrar={onCerrar} titulo={p?.nombre ?? ''} ancho={560} lateral>
+      <Modal abierto={abierto} onCerrar={onCerrar} titulo={p?.nombre ?? ''} ancho={760} lateral>
         {p && (
           <>
             <div className={s.fichaHero} style={{ '--c': '#20a7a1' }}>
@@ -318,10 +327,13 @@ export default function FichaPersona({ id, onCerrar }) {
         abierto={Boolean(confirmar)}
         onCerrar={() => setConfirmar(null)}
         titulo={tituloConf ?? ''}
+        icono={ICONO_CONFIRMAR[confirmar]}
+        tono={confirmar === 'desactivar' ? 'peligro' : undefined}
+        descripcion={p?.email}
         pie={
           <>
             <Button variante="secundario" onClick={() => setConfirmar(null)}>Cancelar</Button>
-            <Button variante={confirmar === 'desactivar' ? 'peligro' : 'primario'} cargando={trabajando} onClick={ejecutar}>{botonConf}</Button>
+            <Button variante={confirmar === 'desactivar' ? 'peligro' : 'primario'} icono={ICONO_CONFIRMAR[confirmar]} cargando={trabajando} onClick={ejecutar}>{botonConf}</Button>
           </>
         }
       >

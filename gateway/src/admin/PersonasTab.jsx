@@ -5,7 +5,8 @@ import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
 import { coincide, fijarMiembros, normalizar, useAbrirPersona, useDatos } from './datos.jsx';
 import { ModalTemporal } from './FichaPersona.jsx';
-import { Avatar, MiniApp, colorApp } from './colores.jsx';
+import { Avatar, MiniApp } from './colores.jsx';
+import SelectorApp from './SelectorApp.jsx';
 import { formatoCorto, formatoFecha } from './useCarga.js';
 import s from './Admin.module.css';
 
@@ -52,11 +53,18 @@ function ModalNueva({ abierto, onCerrar, onCreada }) {
     }
   }
 
+  // Solo para la vista previa: el servicio decide de verdad con PORTAL_CORPORATE_DOMAINS (hoy aed.com.co).
+  const corporativo = /@aed\.com\.co$/i.test(email.trim());
+  const correoListo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+
   return (
     <Modal
       abierto={abierto}
       onCerrar={onCerrar}
+      icono={UserPlus}
       titulo="Nueva persona"
+      descripcion="Crea la cuenta del portal. Después le das aplicaciones y equipos desde su ficha."
+      ancho={540}
       pie={
         <>
           <Button variante="secundario" onClick={onCerrar}>Cancelar</Button>
@@ -65,10 +73,20 @@ function ModalNueva({ abierto, onCerrar, onCreada }) {
       }
     >
       <form id="form-nueva" onSubmit={crear} className={s.formulario} noValidate>
+        <div className={s.vistaPrevia} style={{ '--c': '#20a7a1' }} aria-hidden="true">
+          <Avatar nombre={nombre.trim() || 'Nueva persona'} grande />
+          <div>
+            <strong>{nombre.trim() || 'Nueva persona'}</strong>
+            <span className={s.sub}>{email.trim() || 'correo@empresa.com'}</span>
+            {correoListo && (
+              <span className={s.vistaPreviaDato}>{corporativo ? 'Entrará con su cuenta de Microsoft' : 'Recibirá una contraseña temporal al crearla'}</span>
+            )}
+          </div>
+        </div>
         <Campo etiqueta="Correo" ayuda="Con correo de AED entra con Microsoft; con otro correo recibirá una contraseña temporal.">
-          {(id, aria) => <input id={id} {...aria} type="email" autoComplete="off" required value={email} onChange={(e) => setEmail(e.target.value)} />}
+          {(id, aria) => <input id={id} {...aria} type="email" autoComplete="off" required data-autofocus value={email} onChange={(e) => setEmail(e.target.value)} />}
         </Campo>
-        <Campo etiqueta="Nombre">
+        <Campo etiqueta="Nombre completo">
           {(id, aria) => <input id={id} {...aria} type="text" autoComplete="off" required value={nombre} onChange={(e) => setNombre(e.target.value)} />}
         </Campo>
         <label className={s.casilla}>
@@ -83,9 +101,9 @@ function ModalNueva({ abierto, onCerrar, onCreada }) {
 const POR_PAGINA = 50;
 
 const LOTE = {
-  equipo: { titulo: 'Agregar a un equipo', boton: 'Agregar' },
-  app: { titulo: 'Dar acceso a una aplicación', boton: 'Dar acceso' },
-  desactivar: { titulo: 'Desactivar personas', boton: 'Desactivar' },
+  equipo: { titulo: 'Agregar a un equipo', boton: 'Agregar', icono: Users },
+  app: { titulo: 'Dar acceso a una aplicación', boton: 'Dar acceso', icono: AppWindow },
+  desactivar: { titulo: 'Desactivar personas', boton: 'Desactivar', icono: Power },
 };
 
 // Acciones sobre varias personas a la vez. El equipo se fija en una sola llamada; apps y desactivar van de a una persona
@@ -141,6 +159,9 @@ function ModalLote({ tipo, personas, onCerrar, onHecho }) {
       abierto
       onCerrar={trabajando ? () => {} : onCerrar}
       titulo={LOTE[tipo].titulo}
+      icono={LOTE[tipo].icono}
+      tono={tipo === 'desactivar' ? 'peligro' : undefined}
+      descripcion={`${personas.length} ${personas.length === 1 ? 'persona seleccionada' : 'personas seleccionadas'}`}
       pie={
         <>
           <Button variante="secundario" disabled={trabajando} onClick={onCerrar}>Cancelar</Button>
@@ -281,26 +302,8 @@ export default function PersonasTab() {
           <Search size={18} aria-hidden="true" />
           <input type="search" placeholder="Buscar por nombre o correo…" value={busqueda} onChange={(e) => cambiarFiltro(setBusqueda)(e.target.value)} aria-label="Buscar persona" />
         </label>
-        <Button icono={UserPlus} onClick={() => setNueva(true)}>Nueva persona</Button>
-      </div>
-
-      <div className={s.chipsApps} role="group" aria-label="Filtrar por aplicación">
-        <button type="button" className={s.chipApp} aria-pressed={!appFiltro} onClick={() => cambiarFiltro(setAppFiltro)('')}>
-          Todas las aplicaciones
-        </button>
-        {porApp.map(({ app, total }) => (
-          <button
-            key={app.id}
-            type="button"
-            className={s.chipApp}
-            style={{ '--c': colorApp(app) }}
-            aria-pressed={appFiltro === String(app.id)}
-            onClick={() => cambiarFiltro(setAppFiltro)(appFiltro === String(app.id) ? '' : String(app.id))}
-          >
-            <MiniApp app={app} />
-            {app.nombre} <span className={s.chipTotal}>{total}</span>
-          </button>
-        ))}
+        <SelectorApp opciones={porApp} valor={appFiltro} total={personas.length} onCambiar={cambiarFiltro(setAppFiltro)} />
+        <Button icono={UserPlus} onClick={() => setNueva(true)} className={s.empujarDerecha}>Nueva persona</Button>
       </div>
 
       <div className={s.chips} role="group" aria-label="Filtrar personas">

@@ -68,11 +68,17 @@ export function Cargando({ texto = 'Cargando…' }) {
 
 // Dialogo modal sobre <dialog>: el navegador maneja el foco, Escape y la capa de fondo. `lateral` lo pega al borde derecho a
 // toda la altura (fichas de persona, equipo y aplicacion).
-export function Modal({ abierto, onCerrar, titulo, children, pie, ancho = 480, lateral = false }) {
+// `icono` y `descripcion` (opcionales) arman un encabezado con contexto: que hace el dialogo y por que. `tono="peligro"`
+// pinta el icono en rojo (eliminar, desactivar).
+export function Modal({ abierto, onCerrar, titulo, children, pie, ancho = 480, lateral = false, icono: Icono, descripcion, tono }) {
   const ref = useRef(null);
   useEffect(() => {
     const d = ref.current;
-    if (abierto && !d.open) d.showModal();
+    if (abierto && !d.open) {
+      d.showModal();
+      // showModal pone el foco en lo primero enfocable (el boton de cerrar); un campo marcado con data-autofocus lo recibe.
+      d.querySelector('[data-autofocus]')?.focus();
+    }
     if (!abierto && d.open) d.close();
   }, [abierto]);
 
@@ -90,8 +96,16 @@ export function Modal({ abierto, onCerrar, titulo, children, pie, ancho = 480, l
     >
       {abierto && (
         <div className={s.modalCuerpo}>
-          <header className={s.modalCabecera}>
-            <h2>{titulo}</h2>
+          <header className={`${s.modalCabecera} ${Icono || descripcion ? s.modalCabeceraRica : ''}`}>
+            {Icono && (
+              <span className={`${s.modalIcono} ${tono === 'peligro' ? s.modalIconoPeligro : ''}`} aria-hidden="true">
+                <Icono size={22} strokeWidth={2} />
+              </span>
+            )}
+            <div className={s.modalTitulos}>
+              <h2>{titulo}</h2>
+              {descripcion && <p>{descripcion}</p>}
+            </div>
             <BotonIcono icono={X} etiqueta="Cerrar" onClick={onCerrar} />
           </header>
           <div className={s.modalContenido}>{children}</div>

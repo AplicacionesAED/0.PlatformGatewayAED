@@ -257,6 +257,49 @@
   overscroll-behavior: contain;
 }
 
+/* Encabezado con icono y descripcion: franja suave de marca y la linea de Gradacion aed debajo. */
+.modalCabeceraRica {
+  align-items: flex-start;
+  padding: var(--space-lg) var(--space-md) var(--space-md) var(--space-lg);
+  border-bottom: 0;
+  background:
+    var(--gradient-aed) bottom / 100% 3px no-repeat,
+    linear-gradient(160deg, color-mix(in srgb, var(--color-primary) 9%, white), #fff 75%);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.modalIcono {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radius-md);
+  background: var(--color-brand-deep);
+  color: #fff;
+  box-shadow: 0 8px 18px -8px var(--color-brand-deep);
+}
+
+.modalIconoPeligro {
+  background: var(--color-danger-ink);
+  box-shadow: 0 8px 18px -8px var(--color-danger-ink);
+}
+
+.modalTitulos {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.modalTitulos p {
+  font-size: var(--text-data-size);
+  line-height: 1.45;
+  color: var(--color-ink-muted);
+}
+
 /* Panel lateral: mismo dialogo, pegado a la derecha y a toda la altura. */
 .lateral {
   width: min(var(--ancho, 480px), 100vw);

@@ -341,7 +341,7 @@ section[aria-label] {
   min-height: 36px;
   padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: var(--radius-full);
+  border-radius: 8px;
   background: var(--color-surface-sunken);
   color: var(--color-ink-secondary);
   font-size: var(--text-data-size);
@@ -826,27 +826,6 @@ section[aria-label] {
   border-radius: var(--radius-sm);
 }
 
-.insigniaApp {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 3px 10px 3px 8px;
-  border-radius: var(--radius-full);
-  background: color-mix(in srgb, var(--c) 14%, white);
-  color: color-mix(in srgb, var(--c) 72%, black);
-  font-size: var(--text-label-size);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.insigniaApp::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--c);
-}
-
 .appConAcceso {
   background: color-mix(in srgb, var(--c) 9%, white);
 }
@@ -928,13 +907,6 @@ section[aria-label] {
   min-width: 0;
 }
 
-.cifraFila {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-sm);
-  width: 100%;
-}
 
 .pilaAvatares {
   display: flex;
@@ -1060,11 +1032,6 @@ section[aria-label] {
   -webkit-line-clamp: 2;
   line-clamp: 2;
   overflow: hidden;
-}
-
-.cifraFila {
-  flex-direction: column;
-  align-items: flex-start;
 }
 
 .datosTarjeta {
@@ -1220,44 +1187,112 @@ section[aria-label] {
 
 /* ---------- Personas: filtro por aplicacion y paginacion ---------- */
 
-/* Filtro por aplicacion: un boton por app con su icono y color; el elegido se tiñe con el color de la app. */
-.chipsApps {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
+/* Selector de aplicacion (SelectorApp.jsx): boton con icono, nombre y cantidad, y una lista desplegable igual. Va pegado al
+   buscador; "Nueva persona" se empuja a la derecha. */
+.empujarDerecha {
+  margin-left: auto;
 }
 
-.chipApp {
+.selectorApp {
+  position: relative;
+}
+
+.selectorBoton {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  min-height: 36px;
-  padding: 0 14px 0 6px;
+  gap: 10px;
+  min-width: 280px;
+  min-height: 44px;
+  padding: 0 12px 0 10px;
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-full);
-  background: var(--color-surface);
-  color: var(--color-ink-secondary);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--color-ink);
   font-size: var(--text-data-size);
   font-weight: 600;
+  text-align: left;
   cursor: pointer;
-  transition:
-    background var(--duration-fast) var(--ease-standard),
-    border-color var(--duration-fast) var(--ease-standard);
 }
 
-.chipApp:first-child {
-  padding-left: 14px;
-}
-
-.chipApp:hover {
+.selectorBoton:hover,
+.selectorBoton[aria-expanded='true'] {
   border-color: var(--c, var(--color-primary));
 }
 
-.chipApp[aria-pressed='true'] {
-  border-color: var(--c, var(--color-brand-deep));
-  background: color-mix(in srgb, var(--c, var(--color-brand-deep)) 14%, white);
-  color: color-mix(in srgb, var(--c, var(--color-brand-deep)) 80%, black);
-  box-shadow: inset 0 0 0 1px var(--c, var(--color-brand-deep));
+.selectorBoton:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 18%, transparent);
+}
+
+.selectorNombre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectorFlecha {
+  flex: none;
+  color: var(--color-ink-muted);
+}
+
+.selectorTodas {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--color-brand-deep);
+  color: #fff;
+}
+
+.selectorLista {
+  position: absolute;
+  z-index: var(--z-dropdown);
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: min(420px, 90vw);
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+  box-shadow: var(--shadow-floating);
+}
+
+.selectorLista:focus {
+  outline: none;
+}
+
+.selectorOpcion {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  color: var(--color-ink);
+  cursor: pointer;
+}
+
+.selectorOpcionActiva {
+  background: color-mix(in srgb, var(--c, var(--color-primary)) 10%, white);
+}
+
+.selectorOpcion[aria-selected='true'] {
+  color: color-mix(in srgb, var(--c, var(--color-brand-deep)) 85%, black);
+}
+
+.selectorCheck {
+  flex: none;
+  color: var(--c, var(--color-primary));
 }
 
 .paginacionPie {
@@ -1280,4 +1315,167 @@ section[aria-label] {
 .paginaTexto {
   min-width: 110px;
   text-align: center;
+}
+/* ---------- Vista previa en los modales de crear (equipo, persona) ---------- */
+
+.vistaPrevia {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 14px 16px;
+  border: 1px dashed color-mix(in srgb, var(--c) 45%, white);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--c) 7%, white);
+}
+
+.vistaPrevia > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.vistaPrevia strong {
+  font-size: var(--text-title-size);
+  overflow-wrap: anywhere;
+}
+
+.vistaPreviaDato {
+  margin-top: 4px;
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  color: color-mix(in srgb, var(--c) 80%, black);
+}
+
+/* ---------- Listas paginadas dentro de las fichas ---------- */
+
+.listaPaginada {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.listaPaginadaPie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+/* Buscador para AGREGAR (persona a una app o equipo): borde de accion, distinto del de filtrar la lista. */
+.buscadorAgregar {
+  color: var(--color-primary);
+}
+
+.buscadorAgregar input {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--color-primary) 45%, white);
+}
+
+/* ---------- Equipos: filas compactas ---------- */
+
+.filasEquipo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.filaEquipo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 190px 220px auto;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border);
+  border-left: 4px solid var(--c);
+  border-radius: var(--radius-md);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--c) 9%, white), #fff 45%);
+  color: var(--color-ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
+}
+
+.filaEquipo:hover,
+.filaEquipo:focus-visible {
+  border-color: color-mix(in srgb, var(--c) 45%, white);
+  border-left-color: var(--c);
+  box-shadow: 0 10px 24px -14px color-mix(in srgb, var(--c) 60%, transparent);
+  transform: translateX(2px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filaEquipo:hover,
+  .filaEquipo:focus-visible {
+    transform: none;
+  }
+}
+
+.filaEquipoTexto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.filaEquipoTexto strong {
+  font-size: var(--text-title-size);
+}
+
+.filaEquipoTexto .sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filaEquipoApps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.filaEquipoMiembros {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.filaEquipoCifra {
+  min-width: 92px;
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+  white-space: nowrap;
+}
+
+.filaEquipoCifra strong {
+  font-size: var(--text-title-size);
+  color: color-mix(in srgb, var(--c) 80%, black);
+  font-variant-numeric: tabular-nums;
+}
+
+.filaEquipoFlecha {
+  color: var(--color-ink-muted);
+}
+
+@media (max-width: 760px) {
+  .filaEquipo {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .filaEquipoApps {
+    grid-column: 2 / -1;
+  }
+
+  .filaEquipoMiembros {
+    grid-column: 2 / -1;
+  }
+
+  .filaEquipoFlecha {
+    grid-row: 1;
+    grid-column: 3;
+  }
 }

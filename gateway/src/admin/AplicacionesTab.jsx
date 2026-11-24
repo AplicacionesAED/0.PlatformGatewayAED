@@ -1,8 +1,11 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, Plus, X } from 'lucide-react';
+import { ChevronRight, UserPlus, Plus, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
+import ListaPaginada from './ListaPaginada.jsx';
+
+const textoPersona = (u) => `${u.nombre} ${u.email}`;
 import { useAbrirPersona, useDatos } from './datos.jsx';
 import { Avatar, IconoApp, IconoEquipo, colorApp } from './colores.jsx';
 import s from './Admin.module.css';
@@ -31,7 +34,7 @@ function FichaApp({ app, onCerrar }) {
   const total = (ix.datos?.usuarios ?? []).filter((u) => u.activo && ix.origenes(u).has(app.id)).length;
 
   return (
-    <Modal abierto onCerrar={onCerrar} titulo={app.nombre} ancho={560} lateral>
+    <Modal abierto onCerrar={onCerrar} titulo={app.nombre} ancho={760} lateral>
       <div className={s.fichaHero} style={{ '--c': colorApp(app) }}>
         <IconoApp app={app} tam={26} />
         <div className={s.fichaHeroTexto}>
@@ -84,32 +87,33 @@ function FichaApp({ app, onCerrar }) {
       </section>
 
       <section className={s.fichaSeccion} aria-labelledby="app-personas">
-        <h3 id="app-personas">Personas con acceso directo</h3>
+        <h3 id="app-personas">Personas con acceso directo ({directas.length})</h3>
         <BuscarPersona
           personas={ix.datos?.usuarios ?? []}
           excluir={conDirecta}
           etiqueta={`Buscar persona para dar acceso a ${app.nombre}`}
           placeholder="Dar acceso a una persona…"
+          icono={UserPlus}
           onElegir={(p) => tras(api.post('/accesos', { appId: app.id, usuarioId: p.id }))}
         />
-        {directas.length === 0 ? (
-          <p className={s.sub}>Nadie tiene acceso directo.</p>
-        ) : (
-          <ul className={s.listaFilas}>
-            {directas.map((u) => (
-              <li key={u.id} className={u.activo ? undefined : s.inactiva}>
-                <div className={s.personaCelda}>
-                  <Avatar nombre={u.nombre} />
-                  <span>
-                    <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(u.id)}>{u.nombre}</button>
-                    <span className={s.sub}>{u.email}{u.activo ? '' : ' · inactiva'}</span>
-                  </span>
-                </div>
-                <BotonIcono icono={X} etiqueta={`Quitar ${app.nombre} a ${u.nombre}`} onClick={() => tras(api.delete(`/accesos/${ix.directos.get(u.id).get(app.id)}`))} />
-              </li>
-            ))}
-          </ul>
-        )}
+        <ListaPaginada
+          items={directas}
+          etiqueta={`las personas con acceso a ${app.nombre}`}
+          vacio="Nadie tiene acceso directo."
+          textoDe={textoPersona}
+          renderFila={(u) => (
+            <li key={u.id} className={u.activo ? undefined : s.inactiva}>
+              <div className={s.personaCelda}>
+                <Avatar nombre={u.nombre} />
+                <span>
+                  <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(u.id)}>{u.nombre}</button>
+                  <span className={s.sub}>{u.email}{u.activo ? '' : ' · inactiva'}</span>
+                </span>
+              </div>
+              <BotonIcono icono={X} etiqueta={`Quitar ${app.nombre} a ${u.nombre}`} onClick={() => tras(api.delete(`/accesos/${ix.directos.get(u.id).get(app.id)}`))} />
+            </li>
+          )}
+        />
       </section>
     </Modal>
   );

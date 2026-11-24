@@ -1,10 +1,13 @@
-import { useState } from 'react';
-import { ChevronRight, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ChevronRight, UserPlus, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
+import ListaPaginada from './ListaPaginada.jsx';
+
+const textoPersona = (m) => `${m.nombre} ${m.email}`;
 import { fijarMiembros, useAbrirPersona, useDatos } from './datos.jsx';
-import { Avatar, IconoApp, IconoEquipo, InsigniaApp, colorApp, colorDe } from './colores.jsx';
+import { Avatar, IconoApp, IconoEquipo, MiniApp, colorApp, colorDe } from './colores.jsx';
 import s from './Admin.module.css';
 
 function ModalEquipo({ equipo, abierto, onCerrar, onGuardado }) {
@@ -27,25 +30,42 @@ function ModalEquipo({ equipo, abierto, onCerrar, onGuardado }) {
     }
   }
 
+  // Vista previa en vivo de como se vera el equipo (iniciales y color; uno nuevo toma su color definitivo al crearse).
+  const vista = { id: equipo?.id ?? 0, nombre: nombre.trim() || 'Nuevo equipo' };
+
   return (
     <Modal
       abierto={abierto}
       onCerrar={onCerrar}
+      icono={equipo ? Pencil : Users}
       titulo={equipo ? 'Editar equipo' : 'Nuevo equipo'}
+      descripcion="Un equipo agrupa personas para darles acceso a varias aplicaciones de una vez."
+      ancho={540}
       pie={
         <>
           <Button variante="secundario" onClick={onCerrar}>Cancelar</Button>
-          <Button type="submit" form="form-equipo" cargando={enviando} disabled={!nombre.trim()}>Guardar</Button>
+          <Button type="submit" form="form-equipo" icono={equipo ? undefined : Plus} cargando={enviando} disabled={!nombre.trim()}>
+            {equipo ? 'Guardar cambios' : 'Crear equipo'}
+          </Button>
         </>
       }
     >
       <form id="form-equipo" onSubmit={guardar} className={s.formulario} noValidate>
-        <Campo etiqueta="Nombre">
-          {(id, aria) => <input id={id} {...aria} type="text" required value={nombre} onChange={(e) => setNombre(e.target.value)} />}
+        <div className={s.vistaPrevia} style={{ '--c': colorDe(vista.id) }} aria-hidden="true">
+          <IconoEquipo equipo={vista} grande />
+          <div>
+            <strong>{vista.nombre}</strong>
+            <span className={s.sub}>{descripcion.trim() || 'Sin descripción'}</span>
+            <span className={s.sub}>{equipo ? `${equipo.miembros.length} ${equipo.miembros.length === 1 ? 'miembro' : 'miembros'}` : 'Así se verá en la lista de equipos'}</span>
+          </div>
+        </div>
+        <Campo etiqueta="Nombre" ayuda="Corto y claro: por área, obra o función (p. ej. Contabilidad, Obra Kristal Blu).">
+          {(id, aria) => <input id={id} {...aria} type="text" required maxLength={120} data-autofocus value={nombre} onChange={(e) => setNombre(e.target.value)} />}
         </Campo>
-        <Campo etiqueta="Descripción (opcional)">
-          {(id, aria) => <textarea id={id} {...aria} rows={3} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />}
+        <Campo etiqueta="Descripción (opcional)" ayuda={`${descripcion.length}/500`}>
+          {(id, aria) => <textarea id={id} {...aria} rows={3} maxLength={500} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} />}
         </Campo>
+        {!equipo && <Aviso tipo="info">Al crearlo se abre su ficha para darle aplicaciones y agregar miembros.</Aviso>}
         {error && <Aviso>{error}</Aviso>}
       </form>
     </Modal>
@@ -82,9 +102,10 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
 
   const ids = equipo.miembros.map((m) => m.id);
   const miembros = new Set(ids);
+  const ordenados = useMemo(() => [...equipo.miembros].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')), [equipo.miembros]);
 
   return (
-    <Modal abierto onCerrar={onCerrar} titulo={equipo.nombre} ancho={560} lateral>
+    <Modal abierto onCerrar={onCerrar} titulo={equipo.nombre} ancho={760} lateral>
       <div className={s.fichaHero} style={{ '--c': colorDe(equipo.id) }}>
         <IconoEquipo equipo={equipo} grande />
         <div className={s.fichaHeroTexto}>
@@ -123,30 +144,31 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
           personas={ix.datos?.usuarios ?? []}
           excluir={miembros}
           etiqueta={`Buscar persona para agregar a ${equipo.nombre}`}
-          placeholder="Agregar una persona…"
+          placeholder="Agregar una persona al equipo…"
+          icono={UserPlus}
           onElegir={(p) => tras(fijarMiembros(equipo, [...ids, p.id]))}
         />
-        {equipo.miembros.length === 0 ? (
-          <p className={s.sub}>Sin miembros.</p>
-        ) : (
-          <ul className={s.listaFilas}>
-            {[...equipo.miembros].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map((m) => {
-              const u = ix.personaPorId.get(m.id);
-              return (
-                <li key={m.id} className={u?.activo === false ? s.inactiva : undefined}>
-                  <div className={s.personaCelda}>
-                    <Avatar nombre={m.nombre} />
-                    <span>
-                      <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(m.id)}>{m.nombre}</button>
-                      <span className={s.sub}>{m.email}{u?.activo === false ? ' · inactiva' : ''}</span>
-                    </span>
-                  </div>
-                  <BotonIcono icono={X} etiqueta={`Sacar a ${m.nombre} de ${equipo.nombre}`} onClick={() => tras(fijarMiembros(equipo, ids.filter((id) => id !== m.id)))} />
-                </li>
-              );
-            })}
-          </ul>
-        )}
+        <ListaPaginada
+          items={ordenados}
+          etiqueta={`los miembros de ${equipo.nombre}`}
+          vacio="Sin miembros."
+          textoDe={textoPersona}
+          renderFila={(m) => {
+            const u = ix.personaPorId.get(m.id);
+            return (
+              <li key={m.id} className={u?.activo === false ? s.inactiva : undefined}>
+                <div className={s.personaCelda}>
+                  <Avatar nombre={m.nombre} />
+                  <span>
+                    <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(m.id)}>{m.nombre}</button>
+                    <span className={s.sub}>{m.email}{u?.activo === false ? ' · inactiva' : ''}</span>
+                  </span>
+                </div>
+                <BotonIcono icono={X} etiqueta={`Sacar a ${m.nombre} de ${equipo.nombre}`} onClick={() => tras(fijarMiembros(equipo, ids.filter((id) => id !== m.id)))} />
+              </li>
+            );
+          }}
+        />
       </section>
     </Modal>
   );
@@ -190,31 +212,32 @@ export default function EquiposTab() {
       {(ix.error || errorAccion) && <Aviso>{errorAccion || ix.error}</Aviso>}
 
       {equipos.length === 0 && <p className={s.vacio}>Aún no hay equipos.</p>}
-      <div className={s.tarjetas}>
+      {/* Filas compactas: identidad a la izquierda, apps al centro y miembros a la derecha; una linea de alto. */}
+      <div className={s.filasEquipo}>
         {equipos.map((e) => {
           const apps = [...(ix.deEquipo.get(e.id)?.keys() ?? [])].map((id) => ix.appPorId.get(id)).filter(Boolean);
           return (
-            <button key={e.id} type="button" className={`${s.tarjeta} ${s.tarjetaBoton} ${s.tarjetaColor}`} style={{ '--c': colorDe(e.id) }} onClick={() => setAbierto(e.id)}>
-              <span className={s.tarjetaTitulo}>
-                <IconoEquipo equipo={e} />
-                <span className={s.tarjetaNombre}>{e.nombre}</span>
-                <ChevronRight size={18} aria-hidden="true" />
+            <button key={e.id} type="button" className={s.filaEquipo} style={{ '--c': colorDe(e.id) }} onClick={() => setAbierto(e.id)}>
+              <IconoEquipo equipo={e} />
+              <span className={s.filaEquipoTexto}>
+                <strong>{e.nombre}</strong>
+                <span className={s.sub}>{e.descripcion || 'Sin descripción'}</span>
               </span>
-              {e.descripcion && <span className={s.sub}>{e.descripcion}</span>}
-              <span className={s.cifraFila}>
-                <span className={s.cifra}>
-                  {e.miembros.length} <span className={s.sub}>{e.miembros.length === 1 ? 'miembro' : 'miembros'}</span>
-                </span>
+              <span className={s.filaEquipoApps} aria-label={apps.length ? `Aplicaciones: ${apps.map((a) => a.nombre).join(', ')}` : 'Sin aplicaciones'}>
+                {apps.length ? apps.map((a) => <MiniApp key={a.id} app={a} />) : <span className={s.ninguna}>Sin aplicaciones</span>}
+              </span>
+              <span className={s.filaEquipoMiembros}>
                 <span className={s.pilaAvatares} aria-hidden="true">
                   {e.miembros.slice(0, 4).map((m) => (
                     <Avatar key={m.id} nombre={m.nombre} />
                   ))}
                   {e.miembros.length > 4 && <span className={s.avatarMas}>+{e.miembros.length - 4}</span>}
                 </span>
+                <span className={s.filaEquipoCifra}>
+                  <strong>{e.miembros.length}</strong> {e.miembros.length === 1 ? 'miembro' : 'miembros'}
+                </span>
               </span>
-              <span className={s.insignias}>
-                {apps.length ? apps.map((a) => <InsigniaApp key={a.id} app={a} />) : <span className={s.sub}>Sin aplicaciones</span>}
-              </span>
+              <ChevronRight size={18} aria-hidden="true" className={s.filaEquipoFlecha} />
             </button>
           );
         })}
@@ -247,14 +270,19 @@ export default function EquiposTab() {
         abierto={Boolean(aEliminar)}
         onCerrar={() => setAEliminar(null)}
         titulo={`Eliminar ${aEliminar?.nombre ?? ''}`}
+        icono={Trash2}
+        tono="peligro"
+        descripcion="Esta acción no se puede deshacer."
         pie={
           <>
             <Button variante="secundario" onClick={() => setAEliminar(null)}>Cancelar</Button>
-            <Button variante="peligro" cargando={eliminando} onClick={eliminar}>Eliminar equipo</Button>
+            <Button variante="peligro" icono={Trash2} cargando={eliminando} onClick={eliminar}>Eliminar equipo</Button>
           </>
         }
       >
-        <p>Sus miembros perderán las aplicaciones que este equipo les daba. No se puede deshacer.</p>
+        <p>
+          Sus {aEliminar?.miembros.length ?? 0} {aEliminar?.miembros.length === 1 ? 'miembro pierde' : 'miembros pierden'} las aplicaciones que este equipo les daba (las que tengan directas o por otros equipos las conservan).
+        </p>
       </Modal>
     </section>
   );
