@@ -21,33 +21,45 @@ async function datosDeSesion(usuario) {
   return { apps, equipos: equipos.map((e) => e.nombre) };
 }
 
-const perfilDe = (usuario, { apps, equipos }) => ({
+// `suplantador` ({ id, nombre }) solo en una sesion de suplantacion: la pantalla muestra la franja para regresar. Ahi el
+// cambio de contraseña no se exige (no es de quien suplanta) ni se ofrece.
+const perfilDe = (usuario, { apps, equipos }, suplantador = null) => ({
   id: usuario.id,
   email: usuario.email,
   nombre: usuario.nombre,
   esAdmin: usuario.es_admin,
-  debeCambiarPassword: usuario.debe_cambiar_password,
-  tienePassword: Boolean(usuario.password_hash),
+  debeCambiarPassword: !suplantador && usuario.debe_cambiar_password,
+  tienePassword: !suplantador && Boolean(usuario.password_hash),
   apps: apps.map((a) => ({ slug: a.slug, nombre: a.nombre })),
   equipos,
+  suplantadoPor: suplantador ? { id: suplantador.id, nombre: suplantador.nombre } : null,
 });
 
-async function perfil(usuario) {
-  return perfilDe(usuario, await datosDeSesion(usuario));
+async function perfil(usuario, suplantador = null) {
+  return perfilDe(usuario, await datosDeSesion(usuario), suplantador);
 }
 
-async function crearSesion(usuario, ctx) {
+// `suplantador` y `hasta` solo para suplantacion: la sesion queda a nombre de la persona, marcada con quien la suplanta, y
+// vence en `hasta` aunque se renueve.
+async function crearSesion(usuario, ctx, { suplantador = null, hasta = null } = {}) {
   const datos = await datosDeSesion(usuario);
-  const accessToken = security.createAccessToken(usuario, { apps: datos.apps.map((a) => a.slug), equipos: datos.equipos });
+  const accessToken = security.createAccessToken(usuario, { apps: datos.apps.map((a) => a.slug), equipos: datos.equipos }, suplantador, hasta);
   const refreshToken = security.generateRefreshToken();
   await RefreshToken.create({
     usuario_id: usuario.id,
     token_hash: security.hashRefreshToken(refreshToken),
-    expira_en: new Date(Date.now() + security.REFRESH_TOKEN_DAYS * 24 * 3600 * 1000),
+    expira_en: hasta ?? new Date(Date.now() + security.REFRESH_TOKEN_DAYS * 24 * 3600 * 1000),
     user_agent: (ctx.userAgent ?? '').slice(0, 300) || null,
     ip: ctx.ip ?? null,
+    suplantado_por: suplantador?.id ?? null,
   });
-  return { tokens: { accessToken, refreshToken }, perfil: perfilDe(usuario, datos) };
+  return { tokens: { accessToken, refreshToken }, perfil: perfilDe(usuario, datos, suplantador) };
+}
+
+// Quien suplanta debe seguir activo y siendo administrador; si no, la sesion suplantada deja de valer.
+async function suplantadorVigente(id) {
+  const admin = id ? await Usuario.findByPk(id) : null;
+  return admin?.activo && admin.es_admin ? admin : null;
 }
 
 const revocarSesiones = (usuarioId) =>
@@ -137,8 +149,49 @@ async function refrescar(token, ctx) {
     throw new ApiError(401, SESION_NO_VALIDA);
   }
 
+  // Suplantacion: sigue marcada, conserva su vencimiento original y cae si quien suplanta ya no es administrador activo.
+  let suplantacion = {};
+  if (fila.suplantado_por) {
+    const admin = await suplantadorVigente(fila.suplantado_por);
+    if (!admin || usuario.es_admin) {
+      await fila.update({ revocado: true, revocado_en: new Date() });
+      throw new ApiError(401, SESION_NO_VALIDA);
+    }
+    suplantacion = { suplantador: admin, hasta: fila.expira_en };
+  }
+
   await fila.update({ revocado: true, revocado_en: new Date() });
-  return crearSesion(usuario, ctx);
+  return crearSesion(usuario, ctx, suplantacion);
+}
+
+// Un administrador entra como otra persona (activa y que no sea administradora). Su propia sesion se cierra: para volver
+// usa terminarSuplantacion, que valida que siga siendo administrador. Todo queda en la auditoria a nombre del administrador.
+async function suplantar(admin, usuarioId, tokenActual, ctx) {
+  const objetivo = await Usuario.findByPk(usuarioId);
+  if (!objetivo) throw new ApiError(404, 'La persona no existe');
+  if (objetivo.id === admin.id) throw new ApiError(409, 'No puedes entrar como tú mismo');
+  if (!objetivo.activo) throw new ApiError(409, 'La persona está inactiva');
+  if (objetivo.es_admin) throw new ApiError(409, 'No se puede entrar como otro administrador');
+
+  if (tokenActual) {
+    await RefreshToken.update({ revocado: true, revocado_en: new Date() }, { where: { token_hash: security.hashRefreshToken(tokenActual), usuario_id: admin.id, revocado: false } });
+  }
+  const hasta = new Date(Date.now() + security.SUPLANTACION_MINUTES * 60 * 1000);
+  await auditoria.registrar({ ...ctx, actorId: admin.id, accion: 'sesion.suplantar', entidad: 'usuario', entidadId: objetivo.id, detalle: { hasta: hasta.toISOString() } });
+  return crearSesion(objetivo, ctx, { suplantador: admin, hasta });
+}
+
+// Regresa a la cuenta del administrador desde una sesion suplantada (con su token de renovacion, aunque el de acceso venza).
+async function terminarSuplantacion(token, ctx) {
+  const fila = token ? await RefreshToken.findOne({ where: { token_hash: security.hashRefreshToken(token) } }) : null;
+  if (!fila || fila.revocado || fila.expira_en < new Date()) throw new ApiError(401, SESION_NO_VALIDA);
+  if (!fila.suplantado_por) throw new ApiError(409, 'Esta sesión no es de suplantación');
+
+  await fila.update({ revocado: true, revocado_en: new Date() });
+  const admin = await suplantadorVigente(fila.suplantado_por);
+  if (!admin) throw new ApiError(401, SESION_NO_VALIDA);
+  await auditoria.registrar({ ...ctx, actorId: admin.id, accion: 'sesion.suplantar-fin', entidad: 'usuario', entidadId: fila.usuario_id });
+  return crearSesion(admin, ctx);
 }
 
 async function logout(token, ctx) {
@@ -161,4 +214,4 @@ async function cambiarPassword(usuario, { passwordActual, passwordNueva }, ctx) 
   return crearSesion(usuario, ctx);
 }
 
-module.exports = { login, loginMicrosoft, refrescar, logout, cambiarPassword, perfil, revocarSesiones };
+module.exports = { login, loginMicrosoft, refrescar, logout, cambiarPassword, perfil, revocarSesiones, suplantar, terminarSuplantacion };

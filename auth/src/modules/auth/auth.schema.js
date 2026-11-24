@@ -10,4 +10,6 @@ const cambiarPasswordSchema = z.object({
   passwordNueva: z.string().min(1).max(200),
 });
 
-module.exports = { loginSchema, cambiarPasswordSchema };
+const suplantarSchema = z.object({ usuarioId: z.number().int().positive() });
+
+module.exports = { loginSchema, cambiarPasswordSchema, suplantarSchema };

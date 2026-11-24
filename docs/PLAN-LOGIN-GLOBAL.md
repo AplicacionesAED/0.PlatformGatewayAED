@@ -87,7 +87,7 @@ El frontend de cada app cambia su pantalla de login por una redirección a `/log
 
 - Pantalla de login (Microsoft + correo y contraseña) y cambio de contraseña obligatorio.
 - Tras entrar, solo se muestran las tarjetas de las apps con acceso. Se conservan hero, recientes y estado en línea.
-- Pantalla de administración (`/admin`, solo `es_admin`): usuarios (alta, activar o desactivar, contraseña temporal que se muestra una sola vez, es admin), equipos, aplicaciones y auditoría. Desde 2026-11-24 se organiza por fichas laterales (persona, equipo, aplicación) en lugar de la matriz de accesos: la ficha de persona reúne su estado, sus apps (directas o por qué equipo), sus equipos y su actividad; Personas tiene filtros rápidos y acciones en lote (agregar a equipo, dar app, desactivar); la auditoría filtra por persona y por fechas.
+- Pantalla de administración (`/admin`, solo `es_admin`): usuarios (alta, activar o desactivar, contraseña temporal que se muestra una sola vez, es admin), equipos, aplicaciones y auditoría. Desde 2026-11-24 se organiza por fichas laterales (persona, equipo, aplicación) en lugar de la matriz de accesos: la ficha de persona reúne su estado, sus apps (directas o por qué equipo), sus equipos y su actividad; Personas tiene filtros rápidos y acciones en lote (agregar a equipo, dar app, desactivar); la auditoría filtra por persona y por fechas. Desde 2026-11-24 la ficha de persona tiene "Entrar como esta persona" (suplantación: solo personas activas no administradoras, máximo 1 hora, franja ámbar para regresar; ver `auth/README.md`).
 - Menú de usuario con cierre de sesión global.
 
 ## 4. Fases

@@ -1,0 +1,60 @@
+/* Franja de "entraste como otra persona": ambar para que no se confunda con una sesion normal, fija arriba al desplazarse. */
+
+.franja {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky);
+  background: linear-gradient(90deg, #ffb547, #ffd27a);
+  color: #3d2600;
+  box-shadow: 0 4px 14px -6px rgba(61, 38, 0, 0.45);
+}
+
+.interna {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  width: 100%;
+  max-width: 1240px;
+  margin-inline: auto;
+  padding: 8px var(--space-lg);
+}
+
+.icono {
+  flex: none;
+}
+
+.texto {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-data-size);
+  line-height: 1.4;
+}
+
+.nota {
+  opacity: 0.8;
+}
+
+.error {
+  font-weight: 600;
+  color: var(--color-danger-ink);
+}
+
+.boton {
+  flex: none;
+  min-height: 38px;
+}
+
+@media (max-width: 640px) {
+  .interna {
+    flex-wrap: wrap;
+    padding-inline: 16px;
+  }
+
+  .icono {
+    display: none;
+  }
+
+  .boton {
+    width: 100%;
+  }
+}

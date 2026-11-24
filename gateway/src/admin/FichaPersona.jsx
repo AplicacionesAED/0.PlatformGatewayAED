@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Copy, KeyRound, Plus, Power, ShieldCheck, ShieldOff, Users, X } from 'lucide-react';
+import { Check, Copy, KeyRound, LogIn, Plus, Power, ShieldCheck, ShieldOff, Users, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../components/ui.jsx';
@@ -68,6 +68,11 @@ const TEXTO_CONFIRMAR = {
   reset: (p) => [`Restablecer la contraseña de ${p.nombre}`, 'Se generará una contraseña temporal nueva y se cerrarán sus sesiones. La anterior deja de servir.', 'Restablecer'],
   hacerAdmin: (p) => [`Hacer administrador a ${p.nombre}`, 'Podrá crear personas, dar y quitar accesos y ver la auditoría.', 'Hacer administrador'],
   quitarAdmin: (p) => [`Quitar administrador a ${p.nombre}`, 'Dejará de poder administrar el portal.', 'Quitar rol'],
+  suplantar: (p) => [
+    `Entrar como ${p.nombre}`,
+    `Verás el portal y las aplicaciones exactamente como ${p.nombre}. Lo que hagas en las aplicaciones quedará a su nombre; el portal registra que fuiste tú. Tu sesión de administrador se cierra mientras tanto: una franja arriba te permite regresar, y la sesión termina sola en máximo una hora.`,
+    'Entrar como esta persona',
+  ],
 };
 
 function Actividad({ persona, version }) {
@@ -114,7 +119,8 @@ function Actividad({ persona, version }) {
 
 // Todo lo de una persona en un solo lugar: estado, acciones, aplicaciones (y de donde le llegan), equipos y actividad.
 export default function FichaPersona({ id, onCerrar }) {
-  const { usuario: yo } = useAuth();
+  const auth = useAuth();
+  const yo = auth.usuario;
   const ix = useDatos();
   const [confirmar, setConfirmar] = useState(null); // tipo
   const [temporal, setTemporal] = useState(null);
@@ -152,6 +158,11 @@ export default function FichaPersona({ id, onCerrar }) {
       } else if (confirmar === 'desactivar') await tras(api.patch(`/usuarios/${p.id}`, { activo: false }));
       else if (confirmar === 'hacerAdmin') await tras(api.patch(`/usuarios/${p.id}`, { esAdmin: true }));
       else if (confirmar === 'quitarAdmin') await tras(api.patch(`/usuarios/${p.id}`, { esAdmin: false }));
+      else if (confirmar === 'suplantar') {
+        setError(null);
+        // Si sale bien, la pagina se recarga en el portal ya como esa persona.
+        await auth.suplantar(p.id).catch((err) => setError(err.message));
+      }
     } finally {
       setTrabajando(false);
       setConfirmar(null);
@@ -202,6 +213,12 @@ export default function FichaPersona({ id, onCerrar }) {
             </div>
 
             <div className={s.fichaAcciones}>
+              {/* Solo personas activas que no son administradoras (el servicio aplica la misma regla). */}
+              {p.activo && !p.esAdmin && !soyYo && (
+                <Button icono={LogIn} onClick={() => setConfirmar('suplantar')}>
+                  Entrar como esta persona
+                </Button>
+              )}
               {!p.corporativo && (
                 <Button variante="secundario" icono={KeyRound} onClick={() => setConfirmar('reset')}>
                   Restablecer contraseña

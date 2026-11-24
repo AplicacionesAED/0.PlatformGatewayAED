@@ -42,6 +42,23 @@ export function AuthProvider({ children }) {
         setEstado({ cargando: false, usuario, errorConexion: false });
         return usuario;
       },
+      // Suplantacion: entrar como otra persona y regresar. Tras cada cambio se recarga la pagina entera para que nada de la
+      // sesion anterior (datos de administracion, apps) quede en memoria.
+      suplantar: async (usuarioId) => {
+        await api.post('/auth/suplantar', { usuarioId });
+        window.location.assign(import.meta.env.BASE_URL);
+      },
+      regresar: async () => {
+        const suplantada = estado.usuario?.id;
+        try {
+          await api.post('/auth/suplantar/fin');
+          window.location.assign(`${import.meta.env.BASE_URL}admin/personas${suplantada ? `?persona=${suplantada}` : ''}`);
+        } catch (err) {
+          // La sesion suplantada ya vencio o quien suplanta dejo de ser administrador: toca volver a iniciar sesion.
+          if (err instanceof ApiError && err.status === 401) window.location.assign(`${import.meta.env.BASE_URL}login`);
+          else throw err;
+        }
+      },
       logout: async () => {
         try {
           await api.post('/auth/logout');

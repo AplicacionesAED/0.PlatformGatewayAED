@@ -6,6 +6,8 @@ export const ACCIONES = {
   'login.bloqueado': 'Cuenta bloqueada por intentos',
   logout: 'Cierre de sesión',
   'sesion.reuso': 'Posible robo de sesión',
+  'sesion.suplantar': 'Entró como otra persona',
+  'sesion.suplantar-fin': 'Regresó a su cuenta',
   'password.cambio': 'Cambio de contraseña',
   'usuario.crear': 'Persona creada',
   'usuario.actualizar': 'Persona modificada',
@@ -49,6 +51,7 @@ export function describir(f, ix) {
     else if (k === 'email') partes.push(`Correo: ${v}`);
     else if (k === 'metodo') partes.push(`Con ${METODOS[v] ?? v}`);
     else if (k === 'motivo') partes.push(`Motivo: ${MOTIVOS[v] ?? v}`);
+    else if (k === 'hasta') partes.push(`Hasta las ${new Date(v).toLocaleTimeString('es-CO', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Bogota' })}`);
     else partes.push(`${k}: ${typeof v === 'object' ? JSON.stringify(v) : String(v)}`);
   }
   return partes.join(' · ');

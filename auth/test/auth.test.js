@@ -8,7 +8,7 @@ process.env.PORTAL_ADMIN_EMAILS = 'jefe@aed.com.co';
 const sequelize = require('../src/config/db');
 const app = require('../src/app');
 const security = require('../src/utils/security');
-const { Usuario, App, RefreshToken, Auditoria } = require('../src/models');
+const { Usuario, App, Acceso, RefreshToken, Auditoria } = require('../src/models');
 const authService = require('../src/modules/auth/auth.service');
 
 let server;
@@ -218,6 +218,95 @@ describe('portal-auth (HTTP)', () => {
       const { c: otro } = await entrar('ana@gmail.test');
       await c.post('/api/auth/cambiar-password', { passwordActual: PASS, passwordNueva: 'Nueva-Clave2@' });
       assert.equal((await otro.post('/api/auth/refresh')).status, 401);
+    });
+  });
+
+  describe('suplantación', () => {
+    const claims = (c) => security.verifyAccessToken(c.jar.get(security.ACCESS_COOKIE_NAME));
+
+    it('un administrador entra como otra persona, no administra, renueva sin pasar la hora y regresa a su cuenta', async () => {
+      const adm = await persona('adm@gmail.test', { es_admin: true, nombre: 'Admin' });
+      const ana = await persona('ana@gmail.test', { nombre: 'Ana', debe_cambiar_password: true });
+      await Acceso.create({ app_id: await appId('cartera'), usuario_id: ana.id });
+      const { c } = await entrar('adm@gmail.test');
+
+      const r = await c.post('/api/auth/suplantar', { usuarioId: ana.id });
+      assert.equal(r.status, 200);
+      assert.equal(r.body.data.email, 'ana@gmail.test');
+      assert.deepEqual(r.body.data.suplantadoPor, { id: adm.id, nombre: 'Admin' });
+      // La contraseña pendiente de Ana no se le exige ni se le ofrece a quien suplanta.
+      assert.equal(r.body.data.debeCambiarPassword, false);
+      assert.equal(r.body.data.tienePassword, false);
+      assert.deepEqual(r.body.data.apps.map((a) => a.slug), ['cartera']);
+
+      const t = claims(c);
+      assert.equal(t.sub, String(ana.id));
+      assert.deepEqual(t.act, { sub: String(adm.id), nombre: 'Admin' });
+      assert.equal(t.cpw, false);
+      assert.ok(t.exp - t.iat <= 60 * 60);
+
+      assert.equal((await c.get('/api/me')).body.data.suplantadoPor.id, adm.id);
+      assert.equal((await c.get('/api/usuarios')).status, 403);
+      assert.equal((await c.post('/api/auth/suplantar', { usuarioId: ana.id })).status, 403);
+      assert.equal((await c.post('/api/auth/cambiar-password', { passwordActual: PASS, passwordNueva: 'Nueva-Clave2@' })).status, 403);
+      // La sesion propia del administrador quedo cerrada; la suplantada vence en una hora como maximo.
+      assert.equal(await RefreshToken.count({ where: { usuario_id: adm.id, revocado: false } }), 0);
+      const fila = await RefreshToken.findOne({ where: { usuario_id: ana.id, revocado: false } });
+      assert.equal(fila.suplantado_por, adm.id);
+      assert.ok(fila.expira_en.getTime() <= Date.now() + 60 * 60 * 1000 + 1000);
+
+      const re = await c.post('/api/auth/refresh');
+      assert.equal(re.status, 200);
+      assert.equal(re.body.data.suplantadoPor.id, adm.id);
+      const renovada = await RefreshToken.findOne({ where: { usuario_id: ana.id, revocado: false } });
+      assert.equal(renovada.expira_en.getTime(), fila.expira_en.getTime());
+
+      const fin = await c.post('/api/auth/suplantar/fin');
+      assert.equal(fin.status, 200);
+      assert.equal(fin.body.data.email, 'adm@gmail.test');
+      assert.equal(fin.body.data.suplantadoPor, null);
+      assert.equal(claims(c).act, undefined);
+      assert.equal((await c.get('/api/usuarios')).status, 200);
+      assert.equal(await RefreshToken.count({ where: { usuario_id: ana.id, revocado: false } }), 0);
+      assert.equal((await c.post('/api/auth/suplantar/fin')).status, 409);
+
+      // Ana no figura como si hubiera entrado; la auditoria lo anota a nombre del administrador.
+      assert.equal((await Usuario.findByPk(ana.id)).ultimo_login, null);
+      const acciones = await Auditoria.findAll({ where: { actor_id: adm.id, entidad_id: String(ana.id) }, order: [['id', 'ASC']] });
+      assert.deepEqual(acciones.map((a) => a.accion), ['sesion.suplantar', 'sesion.suplantar-fin']);
+    });
+
+    it('solo un administrador, y nunca como otro administrador, como sí mismo o como alguien inactivo', async () => {
+      const adm = await persona('adm@gmail.test', { es_admin: true });
+      const otroAdm = await persona('otro@gmail.test', { es_admin: true });
+      const inactiva = await persona('ina@gmail.test', { activo: false });
+      const ana = await persona('ana@gmail.test');
+      const { c } = await entrar('adm@gmail.test');
+      assert.equal((await c.post('/api/auth/suplantar', { usuarioId: otroAdm.id })).status, 409);
+      assert.equal((await c.post('/api/auth/suplantar', { usuarioId: adm.id })).status, 409);
+      assert.equal((await c.post('/api/auth/suplantar', { usuarioId: inactiva.id })).status, 409);
+      assert.equal((await c.post('/api/auth/suplantar', { usuarioId: 9999 })).status, 404);
+      assert.equal((await c.post('/api/auth/suplantar', { usuarioId: 'x' })).status, 422);
+
+      const { c: comun } = await entrar('ana@gmail.test');
+      assert.equal((await comun.post('/api/auth/suplantar', { usuarioId: otroAdm.id })).status, 403);
+      assert.equal((await comun.post('/api/auth/suplantar/fin')).status, 409);
+      assert.equal((await cliente().post('/api/auth/suplantar', { usuarioId: ana.id })).status, 401);
+    });
+
+    it('si quien suplanta deja de ser administrador, la sesión suplantada ya no se renueva ni permite regresar', async () => {
+      const adm = await persona('adm@gmail.test', { es_admin: true });
+      const ana = await persona('ana@gmail.test');
+      const { c } = await entrar('adm@gmail.test');
+      await c.post('/api/auth/suplantar', { usuarioId: ana.id });
+      await Usuario.update({ es_admin: false }, { where: { id: adm.id } });
+      assert.equal((await c.post('/api/auth/refresh')).status, 401);
+
+      await Usuario.update({ es_admin: true }, { where: { id: adm.id } });
+      const { c: c2 } = await entrar('adm@gmail.test');
+      await c2.post('/api/auth/suplantar', { usuarioId: ana.id });
+      await Usuario.update({ activo: false }, { where: { id: adm.id } });
+      assert.equal((await c2.post('/api/auth/suplantar/fin')).status, 401);
     });
   });
 

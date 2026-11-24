@@ -19,10 +19,14 @@ async function requireAuth(req, res, next) {
   if (!usuario?.activo) return next(new ApiError(401, 'Usuario no encontrado'));
 
   req.usuario = usuario;
+  // Sesion de suplantacion: quien esta detras (validado al emitir y al renovar la sesion).
+  req.suplantador = payload.act ? { id: Number(payload.act.sub), nombre: payload.act.nombre } : null;
   next();
 }
 
+// Una sesion suplantada nunca administra, aunque la persona suplantada llegara a ser administradora.
 function requireAdmin(req, res, next) {
+  if (req.suplantador) return next(new ApiError(403, 'No se puede administrar mientras entras como otra persona'));
   if (!req.usuario?.es_admin) return next(new ApiError(403, 'Acceso restringido a administradores'));
   if (req.usuario.debe_cambiar_password) return next(new ApiError(403, 'Debes cambiar tu contraseña antes de continuar'));
   next();

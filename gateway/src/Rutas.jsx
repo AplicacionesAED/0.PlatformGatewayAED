@@ -5,6 +5,7 @@ import { Button, Cargando } from './components/ui.jsx';
 import Portal from './App.jsx';
 import LoginPage from './auth/LoginPage.jsx';
 import CambiarPasswordPage from './auth/CambiarPasswordPage.jsx';
+import FranjaSuplantacion from './auth/FranjaSuplantacion.jsx';
 
 // La administracion solo la usan unas pocas personas: no se baja con el portal.
 const AdminPage = lazy(() => import('./admin/AdminPage.jsx'));
@@ -42,21 +43,24 @@ export default function Rutas() {
   if (!AUTH_ACTIVA) return <Portal />;
 
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/cambiar-password" element={<RequiereSesion><CambiarPasswordPage /></RequiereSesion>} />
-      <Route
-        path="/admin/*"
-        element={
-          <RequiereSesion admin>
-            <Suspense fallback={<Pantalla><Cargando /></Pantalla>}>
-              <AdminPage />
-            </Suspense>
-          </RequiereSesion>
-        }
-      />
-      <Route path="/" element={<RequiereSesion><Portal /></RequiereSesion>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <>
+      <FranjaSuplantacion />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/cambiar-password" element={<RequiereSesion><CambiarPasswordPage /></RequiereSesion>} />
+        <Route
+          path="/admin/*"
+          element={
+            <RequiereSesion admin>
+              <Suspense fallback={<Pantalla><Cargando /></Pantalla>}>
+                <AdminPage />
+              </Suspense>
+            </RequiereSesion>
+          }
+        />
+        <Route path="/" element={<RequiereSesion><Portal /></RequiereSesion>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }

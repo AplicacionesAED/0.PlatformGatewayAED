@@ -13,6 +13,8 @@ const RefreshToken = sequelize.define(
     revocado_en: { type: DataTypes.DATE, allowNull: true },
     user_agent: { type: DataTypes.STRING(300), allowNull: true },
     ip: { type: DataTypes.STRING(64), allowNull: true },
+    // Administrador que suplanta a la persona en esta sesion (nulo en una sesion normal).
+    suplantado_por: { type: DataTypes.INTEGER, allowNull: true },
   },
   { tableName: 'refresh_tokens', underscored: true, createdAt: 'creado_en', updatedAt: false }
 );

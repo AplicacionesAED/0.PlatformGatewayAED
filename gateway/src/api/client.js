@@ -37,8 +37,10 @@ async function pedir(metodo, ruta, cuerpo, puedeRenovar = true) {
     throw new ApiError(0, 'No se pudo conectar con el servidor');
   }
 
-  // Las rutas /auth/* devuelven su propio 401 (credenciales malas): no se intenta renovar ahi.
-  if (res.status === 401 && puedeRenovar && !ruta.startsWith('/auth/') && (await renovar())) {
+  // Las rutas /auth/* devuelven su propio 401 (credenciales malas): no se intenta renovar ahi. Excepcion: entrar como otra
+  // persona exige la sesion del administrador, que si puede haber vencido.
+  const renovable = !ruta.startsWith('/auth/') || ruta === '/auth/suplantar';
+  if (res.status === 401 && puedeRenovar && renovable && (await renovar())) {
     return pedir(metodo, ruta, cuerpo, false);
   }
 

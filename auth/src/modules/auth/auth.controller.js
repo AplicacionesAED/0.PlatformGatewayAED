@@ -1,4 +1,5 @@
 const asyncHandler = require('../../utils/asyncHandler');
+const ApiError = require('../../utils/ApiError');
 const { ok, noContent } = require('../../utils/ApiResponse');
 const { REFRESH_COOKIE_NAME, setSessionCookies, clearSessionCookies, getJwks } = require('../../utils/security');
 const service = require('./auth.service');
@@ -30,12 +31,25 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 const cambiarPassword = asyncHandler(async (req, res) => {
+  if (req.suplantador) throw new ApiError(403, 'No puedes cambiar la contraseña de otra persona');
   const { tokens, perfil } = await service.cambiarPassword(req.usuario, req.body, contexto(req));
   setSessionCookies(res, tokens);
   return ok(res, perfil);
 });
 
-const me = asyncHandler(async (req, res) => ok(res, await service.perfil(req.usuario)));
+const suplantar = asyncHandler(async (req, res) => {
+  const { tokens, perfil } = await service.suplantar(req.usuario, req.body.usuarioId, req.cookies?.[REFRESH_COOKIE_NAME], contexto(req));
+  setSessionCookies(res, tokens);
+  return ok(res, perfil);
+});
+
+const terminarSuplantacion = asyncHandler(async (req, res) => {
+  const { tokens, perfil } = await service.terminarSuplantacion(req.cookies?.[REFRESH_COOKIE_NAME], contexto(req));
+  setSessionCookies(res, tokens);
+  return ok(res, perfil);
+});
+
+const me = asyncHandler(async (req, res) => ok(res, await service.perfil(req.usuario, req.suplantador)));
 
 // Las apps descargan esta llave publica para verificar las sesiones; cambia solo al rotar la llave.
 const jwks = (req, res) => {
@@ -43,4 +57,4 @@ const jwks = (req, res) => {
   res.json(getJwks());
 };
 
-module.exports = { login, refresh, logout, cambiarPassword, me, jwks, contexto };
+module.exports = { login, refresh, logout, cambiarPassword, suplantar, terminarSuplantacion, me, jwks, contexto };

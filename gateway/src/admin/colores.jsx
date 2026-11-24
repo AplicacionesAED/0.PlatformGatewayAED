@@ -27,7 +27,7 @@ export const iniciales = (nombre = '') => {
 export function tonoAccion(accion) {
   if (accion === 'login.ok') return 'ok';
   if (accion === 'login.fallido' || accion === 'login.bloqueado' || accion === 'sesion.reuso' || accion === 'equipo.eliminar' || accion === 'acceso.revocar') return 'error';
-  if (accion.startsWith('acceso.')) return 'acceso';
+  if (accion.startsWith('acceso.') || accion.startsWith('sesion.suplantar')) return 'acceso';
   if (accion.startsWith('equipo.')) return 'equipo';
   if (accion.startsWith('usuario.') || accion.startsWith('password.')) return 'info';
   return 'neutro';

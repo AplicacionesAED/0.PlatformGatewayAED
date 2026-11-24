@@ -10,6 +10,8 @@ const AUDIENCE = 'aed-apps';
 // Un acceso desactivado se corta como maximo al vencer el token de acceso: al renovarlo se vuelve a comprobar `activo`.
 const ACCESS_TOKEN_MINUTES = 60;
 const REFRESH_TOKEN_DAYS = 7;
+// Limite de una sesion de suplantacion: no se extiende al renovarla.
+const SUPLANTACION_MINUTES = 60;
 const ACCESS_COOKIE_NAME = 'portal_session';
 const REFRESH_COOKIE_NAME = 'portal_refresh';
 const BCRYPT_ROUNDS = 12;
@@ -29,11 +31,17 @@ const publicKey = crypto.createPublicKey(privateKey);
 const KID = process.env.PORTAL_JWT_KID || 'dev';
 
 // `cpw` = la persona debe cambiar su contrasena: las apps no deben dejarla entrar hasta que lo haga.
-function createAccessToken(usuario, { apps, equipos }) {
-  const payload = { email: usuario.email, nombre: usuario.nombre, apps, equipos, cpw: Boolean(usuario.debe_cambiar_password), type: 'access' };
+// `act` (RFC 8693) = administrador que suplanta a la persona: { sub, nombre }. Solo en sesiones de suplantacion; ahi `cpw`
+// va en falso (quien suplanta no puede cambiar la contrasena ajena).
+// `hasta` (opcional): la sesion termina antes de los 60 minutos normales (suplantacion) y el token no debe durar mas.
+function createAccessToken(usuario, { apps, equipos }, suplantador = null, hasta = null) {
+  const payload = { email: usuario.email, nombre: usuario.nombre, apps, equipos, cpw: !suplantador && Boolean(usuario.debe_cambiar_password), type: 'access' };
+  if (suplantador) payload.act = { sub: String(suplantador.id), nombre: suplantador.nombre };
+  const segundos = ACCESS_TOKEN_MINUTES * 60;
+  const restantes = hasta ? Math.floor((hasta.getTime() - Date.now()) / 1000) : segundos;
   return jwt.sign(payload, privateKey, {
     algorithm: ALGORITHM,
-    expiresIn: `${ACCESS_TOKEN_MINUTES}m`,
+    expiresIn: Math.max(1, Math.min(segundos, restantes)),
     issuer: ISSUER,
     audience: AUDIENCE,
     subject: String(usuario.id),
@@ -88,6 +96,7 @@ function clearSessionCookies(res) {
 module.exports = {
   ACCESS_TOKEN_MINUTES,
   REFRESH_TOKEN_DAYS,
+  SUPLANTACION_MINUTES,
   ACCESS_COOKIE_NAME,
   REFRESH_COOKIE_NAME,
   createAccessToken,
