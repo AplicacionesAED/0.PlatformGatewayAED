@@ -1220,8 +1220,44 @@ section[aria-label] {
 
 /* ---------- Personas: filtro por aplicacion y paginacion ---------- */
 
-.filtroApp select {
-  min-width: 230px;
+/* Filtro por aplicacion: un boton por app con su icono y color; el elegido se tiñe con el color de la app. */
+.chipsApps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.chipApp {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px 0 6px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-ink-secondary);
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
+}
+
+.chipApp:first-child {
+  padding-left: 14px;
+}
+
+.chipApp:hover {
+  border-color: var(--c, var(--color-primary));
+}
+
+.chipApp[aria-pressed='true'] {
+  border-color: var(--c, var(--color-brand-deep));
+  background: color-mix(in srgb, var(--c, var(--color-brand-deep)) 14%, white);
+  color: color-mix(in srgb, var(--c, var(--color-brand-deep)) 80%, black);
+  box-shadow: inset 0 0 0 1px var(--c, var(--color-brand-deep));
 }
 
 .paginacionPie {

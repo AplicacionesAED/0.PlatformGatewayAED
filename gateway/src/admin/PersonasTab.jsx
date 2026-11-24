@@ -5,7 +5,7 @@ import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
 import { coincide, fijarMiembros, normalizar, useAbrirPersona, useDatos } from './datos.jsx';
 import { ModalTemporal } from './FichaPersona.jsx';
-import { Avatar, MiniApp } from './colores.jsx';
+import { Avatar, MiniApp, colorApp } from './colores.jsx';
 import { formatoCorto, formatoFecha } from './useCarga.js';
 import s from './Admin.module.css';
 
@@ -219,6 +219,13 @@ export default function PersonasTab() {
     return lista.map(([clave, nombre, fn]) => ({ clave, nombre, fn, total: ix.datos.usuarios.filter(fn).length }));
   }, [ix]);
 
+  // Cuantas personas tienen cada app (directo o por equipo), para los botones del filtro por aplicacion.
+  const porApp = useMemo(() => {
+    if (!ix.datos) return [];
+    const origenes = ix.datos.usuarios.map((u) => ix.origenes(u));
+    return ix.datos.apps.map((app) => ({ app, total: origenes.filter((o) => o.has(app.id)).length }));
+  }, [ix]);
+
   const filas = useMemo(() => {
     const q = normalizar(busqueda.trim());
     const fn = filtros.find((f) => f.clave === filtro)?.fn ?? (() => true);
@@ -274,16 +281,26 @@ export default function PersonasTab() {
           <Search size={18} aria-hidden="true" />
           <input type="search" placeholder="Buscar por nombre o correo…" value={busqueda} onChange={(e) => cambiarFiltro(setBusqueda)(e.target.value)} aria-label="Buscar persona" />
         </label>
-        <label className={`${s.filtro} ${s.filtroApp}`}>
-          <span className={s.soloLectores}>Aplicación</span>
-          <select value={appFiltro} onChange={(e) => cambiarFiltro(setAppFiltro)(e.target.value)} aria-label="Filtrar por aplicación">
-            <option value="">Todas las aplicaciones</option>
-            {ix.datos.apps.map((a) => (
-              <option key={a.id} value={a.id}>{a.nombre}</option>
-            ))}
-          </select>
-        </label>
         <Button icono={UserPlus} onClick={() => setNueva(true)}>Nueva persona</Button>
+      </div>
+
+      <div className={s.chipsApps} role="group" aria-label="Filtrar por aplicación">
+        <button type="button" className={s.chipApp} aria-pressed={!appFiltro} onClick={() => cambiarFiltro(setAppFiltro)('')}>
+          Todas las aplicaciones
+        </button>
+        {porApp.map(({ app, total }) => (
+          <button
+            key={app.id}
+            type="button"
+            className={s.chipApp}
+            style={{ '--c': colorApp(app) }}
+            aria-pressed={appFiltro === String(app.id)}
+            onClick={() => cambiarFiltro(setAppFiltro)(appFiltro === String(app.id) ? '' : String(app.id))}
+          >
+            <MiniApp app={app} />
+            {app.nombre} <span className={s.chipTotal}>{total}</span>
+          </button>
+        ))}
       </div>
 
       <div className={s.chips} role="group" aria-label="Filtrar personas">
