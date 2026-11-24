@@ -60,6 +60,14 @@ server {
         try_files $uri =404;
     }
 
+    # Latido de actividad que cargan el portal y las apps (<script src="/actividad.js">): sin hash en el nombre, asi que
+    # se revalida siempre para que un cambio llegue a todas las apps sin redeployarlas.
+    location = /actividad.js {
+        root /usr/share/nginx/html;
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/snippets/security-headers.conf;
+    }
+
     # Los assets de Vite llevan hash en el nombre: cache largo es seguro.
     location /assets/ {
         root /usr/share/nginx/html;

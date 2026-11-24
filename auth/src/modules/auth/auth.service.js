@@ -62,10 +62,10 @@ async function suplantadorVigente(id) {
   return admin?.activo && admin.es_admin ? admin : null;
 }
 
-// Ultima actividad: se marca al entrar, al renovar la sesion (cada app la renueva mientras se usa) y al abrir el portal.
-// Lo que hace un administrador suplantando no cuenta como actividad de la persona. Fuera del login se escribe a lo sumo
-// cada ACTIVIDAD_CADA_MS para no tocar la base en cada /me.
-const ACTIVIDAD_CADA_MS = 5 * 60 * 1000;
+// Ultima actividad: se marca al entrar, al renovar la sesion, al abrir el portal y con el latido (/auth/actividad) que
+// mandan el portal y las apps cada 2 minutos mientras la persona las usa. Lo que hace un administrador suplantando no
+// cuenta como actividad de la persona. Fuera del login se escribe a lo sumo cada ACTIVIDAD_CADA_MS.
+const ACTIVIDAD_CADA_MS = 60 * 1000;
 async function marcarActividad(usuario, { suplantado = false, forzar = false } = {}) {
   if (suplantado) return;
   const ahora = new Date();
@@ -208,6 +208,16 @@ async function terminarSuplantacion(token, ctx) {
   return crearSesion(admin, ctx);
 }
 
+// Latido: identifica a la persona por su token de renovacion SIN rotarlo, asi funciona aunque el token de acceso haya
+// vencido y no compite con la renovacion que hace la app (dos rotaciones a la vez podrian cerrar la sesion).
+async function latido(token) {
+  const fila = token ? await RefreshToken.findOne({ where: { token_hash: security.hashRefreshToken(token) } }) : null;
+  if (!fila || fila.revocado || fila.expira_en < new Date()) throw new ApiError(401, SESION_NO_VALIDA);
+  const usuario = await Usuario.findByPk(fila.usuario_id);
+  if (!usuario?.activo) throw new ApiError(401, SESION_NO_VALIDA);
+  await marcarActividad(usuario, { suplantado: Boolean(fila.suplantado_por) });
+}
+
 async function logout(token, ctx) {
   if (!token) return;
   const fila = await RefreshToken.findOne({ where: { token_hash: security.hashRefreshToken(token) } });
@@ -228,4 +238,4 @@ async function cambiarPassword(usuario, { passwordActual, passwordNueva }, ctx) 
   return crearSesion(usuario, ctx);
 }
 
-module.exports = { login, loginMicrosoft, refrescar, logout, cambiarPassword, perfil, revocarSesiones, suplantar, terminarSuplantacion, marcarActividad };
+module.exports = { login, loginMicrosoft, refrescar, logout, cambiarPassword, perfil, revocarSesiones, suplantar, terminarSuplantacion, marcarActividad, latido };

@@ -7,14 +7,24 @@ import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../compone
 import { ACCIONES, describir } from './auditoriaTexto.js';
 import { fijarMiembros, useDatos } from './datos.jsx';
 import { Avatar, IconoApp, IconoEquipo, colorApp, tonoAccion } from './colores.jsx';
-import { enLinea, formatoFecha, formatoRelativo } from './useCarga.js';
+import { enLinea, formatoFecha, formatoRelativo, ultimaHora } from './useCarga.js';
 import s from './Admin.module.css';
 
-// Ultima actividad con punto verde si esta en linea (activa en la ultima hora). Se usa en la tabla y en la ficha.
+// Ultima actividad: punto verde "En linea" (ultimos 5 min) con los minutos al lado, punto ambar si fue en la ultima hora y
+// solo el texto relativo si es mas vieja. Se usa en la tabla y en la ficha.
 export function UltimaActividad({ p }) {
   if (!p.ultimaActividad) return <span className={s.ninguna}>Nunca</span>;
-  if (enLinea(p)) return <span className={`${s.estado} ${s.estadoOk} ${s.enLinea}`}>En línea</span>;
-  return <span className={s.actividadRelativa}>{formatoRelativo(p.ultimaActividad)}</span>;
+  const cuando = formatoRelativo(p.ultimaActividad);
+  if (enLinea(p)) {
+    return (
+      <span className={s.actividadCelda}>
+        <span className={`${s.estado} ${s.estadoOk} ${s.enLinea}`}>En línea</span>
+        <span className={s.actividadMinutos}>{cuando}</span>
+      </span>
+    );
+  }
+  if (ultimaHora(p)) return <span className={`${s.estado} ${s.actividadReciente}`}>{cuando}</span>;
+  return <span className={s.actividadRelativa}>{cuando}</span>;
 }
 
 // La contraseña temporal se muestra UNA vez: el servicio no la guarda en claro y no hay forma de volver a verla.

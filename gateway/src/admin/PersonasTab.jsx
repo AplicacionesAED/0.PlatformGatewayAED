@@ -7,7 +7,7 @@ import { coincide, fijarMiembros, normalizar, useAbrirPersona, useDatos } from '
 import { ModalTemporal, UltimaActividad } from './FichaPersona.jsx';
 import { Avatar, MiniApp } from './colores.jsx';
 import SelectorApp from './SelectorApp.jsx';
-import { enLinea, formatoFecha } from './useCarga.js';
+import { enLinea, formatoFecha, ultimaHora } from './useCarga.js';
 import s from './Admin.module.css';
 
 // Como entra la persona, en una sola linea (la ficha muestra el detalle completo).
@@ -233,6 +233,7 @@ export default function PersonasTab() {
       ['activas', 'Activas', (u) => u.activo],
       ['inactivas', 'Inactivas', (u) => !u.activo],
       ['enLinea', 'En línea', enLinea],
+      ['ultimaHora', 'Última hora', ultimaHora],
       ['admins', 'Administradores', (u) => u.esAdmin],
       ['sinApps', 'Sin aplicaciones', (u) => u.activo && ix.appsDe(u).length === 0],
       ['nunca', 'Nunca han entrado', (u) => !u.ultimoLogin],

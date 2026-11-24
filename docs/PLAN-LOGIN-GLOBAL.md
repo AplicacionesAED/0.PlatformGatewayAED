@@ -38,7 +38,7 @@ Navegador ── portal.aed-it.com ──► gateway (nginx)
 
 | Tabla | Contenido |
 |---|---|
-| `usuarios` | id, `email` (único, minúsculas), nombre, `activo`, `es_admin`, `password_hash` (nulo si solo usa Microsoft), `debe_cambiar_password`, `microsoft_id`, `microsoft_email`, `intentos_fallidos`, `bloqueado_hasta`, `ultimo_login`, `ultima_actividad` (login, cada renovación de sesión y entrada al portal; no cuenta lo hecho por un administrador que suplanta. "En línea" en el panel = actividad en la última hora) |
+| `usuarios` | id, `email` (único, minúsculas), nombre, `activo`, `es_admin`, `password_hash` (nulo si solo usa Microsoft), `debe_cambiar_password`, `microsoft_id`, `microsoft_email`, `intentos_fallidos`, `bloqueado_hasta`, `ultimo_login`, `ultima_actividad` (login, renovación de sesión, entrada al portal y latido de `/actividad.js` cada 2 min mientras se usa el portal o una app que lo carga; no cuenta lo hecho por un administrador que suplanta. "En línea" en el panel = actividad en los últimos 5 min) |
 | `equipos` | id, nombre, descripción |
 | `equipo_miembros` | equipo × usuario |
 | `apps` | id, `slug` (`cartera`, `siger`, `solicitudes`, `hrsm`, `bases`, `comercial`; `actas` se quitó del catálogo el 2026-11-23 hasta que el Bot de Actas entre al portal; el `id` de la landing para Comercial hoy es `comerciales` y habrá que alinearlo), nombre, `activa` |

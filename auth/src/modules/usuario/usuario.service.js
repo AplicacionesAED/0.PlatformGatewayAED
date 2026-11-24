@@ -37,6 +37,13 @@ async function listar() {
   return usuarios.map(serializar);
 }
 
+// Solo la ultima actividad de cada persona: el panel la consulta cada minuto para mostrar quien esta en linea sin
+// recargar toda la lista.
+async function actividad() {
+  const filas = await Usuario.findAll({ attributes: ['id', 'ultima_actividad'], raw: true });
+  return filas.map((f) => ({ id: f.id, ultimaActividad: f.ultima_actividad }));
+}
+
 // Contrasena temporal: se devuelve UNA vez en la respuesta y nunca se guarda en claro. La persona debe cambiarla al entrar.
 async function conTemporal(usuario) {
   const temporal = generateRandomPassword();
@@ -82,4 +89,4 @@ async function resetearPassword(id, ctx) {
   return { passwordTemporal };
 }
 
-module.exports = { listar, crear, actualizar, resetearPassword, serializar, obtener };
+module.exports = { listar, actividad, crear, actualizar, resetearPassword, serializar, obtener };

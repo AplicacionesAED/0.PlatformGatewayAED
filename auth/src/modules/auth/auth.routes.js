@@ -17,5 +17,7 @@ router.post('/cambiar-password', requireAuth, validate(cambiarPasswordSchema), c
 // (y no estar ya suplantando); regresar usa solo la cookie de renovacion de la sesion suplantada.
 router.post('/suplantar', requireAuth, requireAdmin, validate(suplantarSchema), controller.suplantar);
 router.post('/suplantar/fin', controller.terminarSuplantacion);
+// Latido de actividad (script /actividad.js del gateway): bajo /auth para que llegue la cookie de renovacion.
+router.post('/actividad', controller.actividad);
 
 module.exports = router;

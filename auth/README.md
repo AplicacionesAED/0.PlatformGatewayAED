@@ -31,6 +31,7 @@ Sin `PORTAL_JWT_PRIVATE_KEY_B64` en desarrollo se genera una llave efímera (las
 | `POST /api/auth/cambiar-password` | autenticado | cambio (obligatorio en el primer ingreso con temporal) |
 | `POST /api/auth/suplantar` `{ usuarioId }` | solo `es_admin` (sin estar ya suplantando) | entra como otra persona activa que no sea administradora; cierra la sesión del administrador |
 | `POST /api/auth/suplantar/fin` | cookie de renovación de una sesión suplantada | regresa a la cuenta del administrador (si sigue activo y administrador) |
+| `POST /api/auth/actividad` | cookie de renovación (sin rotarla) | latido de `gateway/public/actividad.js`: marca la última actividad (204; 401 sin sesión, sin limpiar cookies) |
 | `GET /api/me` | autenticado | persona, apps permitidas y equipos (`suplantadoPor` en una sesión suplantada) |
 | `GET /api/.well-known/jwks.json` | público | llave pública para verificar sesiones |
 | `/api/usuarios`, `/api/equipos`, `/api/apps`, `/api/accesos` (+ `/matriz`), `/api/auditoria` (filtros `accion`, `actorId`, `usuarioId` = todo lo que toca a una persona, `desde`/`hasta` en AAAA-MM-DD hora Colombia) | solo `es_admin` | administración |
@@ -40,6 +41,7 @@ Sin `PORTAL_JWT_PRIVATE_KEY_B64` en desarrollo se genera una llave efímera (las
 - Cookie `portal_session` (JWT `RS256`, 60 min) y `portal_refresh` (opaca, 7 días, rotativa; solo se guarda su hash). `HttpOnly`, `SameSite=Lax`, `Secure` en producción.
 - Claims: `sub`, `email`, `nombre`, `apps` (slugs permitidos), `equipos`, `cpw` (debe cambiar contraseña; las apps no deben dejarla entrar), `iss=portal.aed-it.com`, `aud=aed-apps`.
 - Las apps verifican con la llave pública del JWKS. Un token de renovación revocado que reaparece pasados 30 s se toma como robo y cierra todas las sesiones de esa persona.
+- **Última actividad** (`usuarios.ultima_actividad`): se marca al entrar, al renovar, en `/me` y con el latido; fuera del login a lo sumo una vez por minuto, y nunca durante una suplantación. El portal y cada app cargan `<script src="/actividad.js" defer>` (lo sirve el gateway), que manda el latido cada 2 min mientras la pestaña está visible y con uso en los últimos 10 min. El panel marca "En línea" con actividad en los últimos 5 min y refresca con `GET /api/usuarios/actividad` cada minuto.
 - `PORTAL_REFRESH_COOKIE_PATH` es la ruta que ve el navegador: `/api/auth` en local, `/portal/api/auth` detrás del gateway.
 - **Suplantación** ("entrar como"): la sesión queda a nombre de la persona y lleva el claim `act` = `{ sub, nombre }` del administrador (RFC 8693); `cpw` va en falso. Dura máximo 60 min (`SUPLANTACION_MINUTES`): renovarla no la extiende. Dentro de ella no se administra ni se cambia la contraseña. Cae si el administrador deja de ser administrador activo. La auditoría registra `sesion.suplantar` y `sesion.suplantar-fin` a nombre del administrador. Las apps hoy no leen `act`, así que lo que se haga en ellas queda a nombre de la persona.
 

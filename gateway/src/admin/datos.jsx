@@ -112,6 +112,29 @@ export function AdminDatos({ children }) {
     recargar();
   }, [recargar]);
 
+  // Actividad en vivo: cada minuto (con la pestaña visible) trae solo la ultima actividad de cada persona. Siempre crea un
+  // estado nuevo, asi tambien se actualizan los "hace N min" aunque nadie haya cambiado.
+  useEffect(() => {
+    const refrescar = async () => {
+      if (document.visibilityState !== 'visible') return;
+      try {
+        const lista = await api.get('/usuarios/actividad');
+        const porId = new Map(lista.map((f) => [f.id, f.ultimaActividad]));
+        setEstado((anterior) => {
+          if (!anterior.datos) return anterior;
+          const usuarios = anterior.datos.usuarios.map((u) =>
+            porId.has(u.id) && porId.get(u.id) !== u.ultimaActividad ? { ...u, ultimaActividad: porId.get(u.id) } : u
+          );
+          return { ...anterior, datos: { ...anterior.datos, usuarios } };
+        });
+      } catch {
+        // Sin red o sesion vencida: la proxima vuelta lo intenta de nuevo; la carga completa ya muestra sus errores.
+      }
+    };
+    const id = setInterval(refrescar, 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
   const indices = useMemo(() => (estado.datos ? indexar(estado.datos) : null), [estado.datos]);
   const valor = useMemo(() => ({ ...estado, ...indices, recargar }), [estado, indices, recargar]);
   return <Contexto.Provider value={valor}>{children}</Contexto.Provider>;

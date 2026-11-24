@@ -8,6 +8,7 @@ const router = express.Router();
 router.use(requireAuth, requireAdmin);
 
 router.get('/', controller.listar);
+router.get('/actividad', controller.actividad);
 router.post('/', validate(crearUsuarioSchema), controller.crear);
 router.patch('/:id', validate(idParam, 'params'), validate(actualizarUsuarioSchema), controller.actualizar);
 router.post('/:id/reset-password', validate(idParam, 'params'), controller.resetearPassword);

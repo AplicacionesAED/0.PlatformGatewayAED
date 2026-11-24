@@ -54,10 +54,16 @@ const me = asyncHandler(async (req, res) => {
   return ok(res, await service.perfil(req.usuario, req.suplantador));
 });
 
+// Sin limpiar cookies si falla: el latido nunca debe cerrar una sesion.
+const actividad = asyncHandler(async (req, res) => {
+  await service.latido(req.cookies?.[REFRESH_COOKIE_NAME]);
+  return noContent(res);
+});
+
 // Las apps descargan esta llave publica para verificar las sesiones; cambia solo al rotar la llave.
 const jwks = (req, res) => {
   res.set('Cache-Control', 'public, max-age=300');
   res.json(getJwks());
 };
 
-module.exports = { login, refresh, logout, cambiarPassword, suplantar, terminarSuplantacion, me, jwks, contexto };
+module.exports = { login, refresh, logout, cambiarPassword, suplantar, terminarSuplantacion, actividad, me, jwks, contexto };

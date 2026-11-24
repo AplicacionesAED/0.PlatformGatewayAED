@@ -129,7 +129,7 @@ describe('portal-auth (HTTP)', () => {
     const actividad = async (id) => (await Usuario.findByPk(id)).ultima_actividad;
     const hace = (min) => new Date(Date.now() - min * 60 * 1000);
 
-    it('se marca al entrar, al renovar la sesión y al abrir el portal (este, a lo sumo cada 5 minutos)', async () => {
+    it('se marca al entrar, al renovar la sesión y al abrir el portal (este, a lo sumo cada minuto)', async () => {
       const ana = await persona('ana@gmail.test');
       const { c } = await entrar('ana@gmail.test');
       const alEntrar = await actividad(ana.id);
@@ -142,12 +142,41 @@ describe('portal-auth (HTTP)', () => {
       // El ultimo inicio de sesion no cambia al renovar.
       assert.equal((await Usuario.findByPk(ana.id)).ultimo_login.getTime(), alEntrar.getTime());
 
+      await Usuario.update({ ultima_actividad: hace(0.5) }, { where: { id: ana.id } });
+      await c.get('/api/me');
+      assert.ok(Date.now() - (await actividad(ana.id)) > 20 * 1000); // reciente: no se reescribe
       await Usuario.update({ ultima_actividad: hace(2) }, { where: { id: ana.id } });
       await c.get('/api/me');
-      assert.ok(Date.now() - (await actividad(ana.id)) > 60 * 1000); // reciente: no se reescribe
-      await Usuario.update({ ultima_actividad: hace(10) }, { where: { id: ana.id } });
-      await c.get('/api/me');
       assert.ok(Date.now() - (await actividad(ana.id)) < 5000);
+    });
+
+    it('el latido la marca con la cookie de renovación, sin rotarla, aunque el token de acceso haya vencido', async () => {
+      const ana = await persona('ana@gmail.test');
+      const { c } = await entrar('ana@gmail.test');
+      const renovacion = c.jar.get('portal_refresh');
+      c.jar.delete('portal_session'); // como si el token de acceso ya hubiera vencido
+      await Usuario.update({ ultima_actividad: hace(3) }, { where: { id: ana.id } });
+
+      assert.equal((await c.post('/api/auth/actividad')).status, 204);
+      assert.ok(Date.now() - (await actividad(ana.id)) < 5000);
+      assert.equal(c.jar.get('portal_refresh'), renovacion);
+      assert.equal(await RefreshToken.count({ where: { usuario_id: ana.id, revocado: false } }), 1);
+      assert.equal((await c.post('/api/auth/refresh')).status, 200); // la sesion sigue intacta
+    });
+
+    it('el latido sin sesión válida da 401 sin borrar cookies, y el de una sesión suplantada no cuenta', async () => {
+      assert.equal((await cliente().post('/api/auth/actividad')).status, 401);
+      const x = cliente();
+      x.jar.set('portal_refresh', 'inventado');
+      assert.equal((await x.post('/api/auth/actividad')).status, 401);
+      assert.equal(x.jar.get('portal_refresh'), 'inventado');
+
+      await persona('adm@gmail.test', { es_admin: true });
+      const ana = await persona('ana@gmail.test');
+      const { c } = await entrar('adm@gmail.test');
+      await c.post('/api/auth/suplantar', { usuarioId: ana.id });
+      assert.equal((await c.post('/api/auth/actividad')).status, 204);
+      assert.equal(await actividad(ana.id), null);
     });
 
     it('el panel la muestra junto al último inicio de sesión', async () => {
@@ -157,6 +186,12 @@ describe('portal-auth (HTTP)', () => {
       const fila = (await c.get('/api/usuarios')).body.data.find((u) => u.id === ana.id);
       assert.equal(new Date(fila.ultimaActividad).getTime(), (await actividad(ana.id)).getTime());
       assert.equal(fila.ultimoLogin, null);
+
+      const ligera = (await c.get('/api/usuarios/actividad')).body.data.find((u) => u.id === ana.id);
+      assert.deepEqual(Object.keys(ligera).sort(), ['id', 'ultimaActividad']);
+      assert.equal(new Date(ligera.ultimaActividad).getTime(), (await actividad(ana.id)).getTime());
+      const { c: comun } = await entrar('ana@gmail.test');
+      assert.equal((await comun.get('/api/usuarios/actividad')).status, 403);
     });
   });
 

@@ -973,6 +973,24 @@ section[aria-label] {
   font-size: var(--text-data-size);
 }
 
+.actividadCelda {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.actividadMinutos {
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+}
+
+/* Activa en la ultima hora, ya no en linea: punto ambar, texto normal. */
+.actividadReciente {
+  --t: #d08a12;
+  font-weight: 500;
+  font-size: var(--text-data-size);
+}
+
 .admin {
   display: inline-flex;
   align-items: center;
