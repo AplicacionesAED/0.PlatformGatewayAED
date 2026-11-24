@@ -1,11 +1,10 @@
-import { useMemo, useState } from 'react';
-import { Pencil, Plus, Search, Trash2, Users } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronRight, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Campo, Cargando, Insignia, Modal } from '../components/ui.jsx';
-import { useCarga } from './useCarga.js';
+import BuscarPersona from './BuscarPersona.jsx';
+import { fijarMiembros, useAbrirPersona, useDatos } from './datos.jsx';
 import s from './Admin.module.css';
-
-const normalizar = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
 function ModalEquipo({ equipo, abierto, onCerrar, onGuardado }) {
   const [nombre, setNombre] = useState(equipo?.nombre ?? '');
@@ -18,9 +17,8 @@ function ModalEquipo({ equipo, abierto, onCerrar, onGuardado }) {
     setError(null);
     setEnviando(true);
     try {
-      if (equipo) await api.patch(`/equipos/${equipo.id}`, { nombre, descripcion: descripcion || null });
-      else await api.post('/equipos', { nombre, descripcion: descripcion || null });
-      onGuardado();
+      const r = equipo ? await api.patch(`/equipos/${equipo.id}`, { nombre, descripcion: descripcion || null }) : await api.post('/equipos', { nombre, descripcion: descripcion || null });
+      onGuardado(r);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -53,83 +51,102 @@ function ModalEquipo({ equipo, abierto, onCerrar, onGuardado }) {
   );
 }
 
-// Reemplaza la lista completa de miembros: lo que se marca aqui es el resultado final.
-function ModalMiembros({ equipo, abierto, onCerrar, onGuardado }) {
-  const { datos: personas, cargando } = useCarga('/usuarios');
-  const [marcados, setMarcados] = useState(() => new Set(equipo.miembros.map((m) => m.id)));
-  const [busqueda, setBusqueda] = useState('');
+// Todo lo de un equipo: sus aplicaciones y sus miembros (se agregan de a uno con el buscador).
+function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
+  const ix = useDatos();
+  const abrirPersona = useAbrirPersona();
   const [error, setError] = useState(null);
-  const [enviando, setEnviando] = useState(false);
+  const [pendientes, setPendientes] = useState(() => new Set());
 
-  const visibles = useMemo(() => {
-    const q = normalizar(busqueda.trim());
-    return (personas ?? []).filter((p) => !q || normalizar(`${p.nombre} ${p.email}`).includes(q));
-  }, [personas, busqueda]);
-
-  const alternar = (id) =>
-    setMarcados((actual) => {
-      const nuevo = new Set(actual);
-      if (nuevo.has(id)) nuevo.delete(id);
-      else nuevo.add(id);
-      return nuevo;
-    });
-
-  async function guardar() {
+  async function tras(promesa) {
     setError(null);
-    setEnviando(true);
     try {
-      await api.put(`/equipos/${equipo.id}/miembros`, { usuarioIds: [...marcados] });
-      onGuardado();
+      await promesa;
+      await ix.recargar();
     } catch (err) {
       setError(err.message);
-    } finally {
-      setEnviando(false);
     }
   }
 
+  async function alternarApp(app) {
+    const accesoId = ix.deEquipo.get(equipo.id)?.get(app.id);
+    setPendientes((x) => new Set(x).add(app.id));
+    await tras(accesoId ? api.delete(`/accesos/${accesoId}`) : api.post('/accesos', { appId: app.id, equipoId: equipo.id }));
+    setPendientes((x) => {
+      const n = new Set(x);
+      n.delete(app.id);
+      return n;
+    });
+  }
+
+  const ids = equipo.miembros.map((m) => m.id);
+  const miembros = new Set(ids);
+
   return (
-    <Modal
-      abierto={abierto}
-      onCerrar={onCerrar}
-      titulo={`Miembros de ${equipo.nombre}`}
-      ancho={560}
-      pie={
-        <>
-          <Button variante="secundario" onClick={onCerrar}>Cancelar</Button>
-          <Button cargando={enviando} onClick={guardar}>Guardar ({marcados.size})</Button>
-        </>
-      }
-    >
-      <label className={`${s.buscador} ${s.buscadorBloque}`}>
-        <Search size={18} aria-hidden="true" />
-        <input type="search" placeholder="Buscar persona…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} aria-label="Buscar persona" />
-      </label>
-      {cargando ? (
-        <Cargando />
-      ) : (
-        <ul className={s.listaMarcar}>
-          {visibles.map((p) => (
-            <li key={p.id}>
+    <Modal abierto onCerrar={onCerrar} titulo={equipo.nombre} ancho={560} lateral>
+      <div className={s.fichaCabecera}>
+        {equipo.descripcion && <p className={s.sub}>{equipo.descripcion}</p>}
+      </div>
+      <div className={s.fichaAcciones}>
+        <Button variante="secundario" icono={Pencil} onClick={onEditar}>Editar</Button>
+        <Button variante="secundario" icono={Trash2} onClick={onEliminar}>Eliminar equipo</Button>
+      </div>
+      {error && <Aviso>{error}</Aviso>}
+
+      <section className={s.fichaSeccion} aria-labelledby="equipo-apps">
+        <h3 id="equipo-apps">Aplicaciones</h3>
+        <p className={s.sub}>Todos los miembros entran a las aplicaciones marcadas.</p>
+        <ul className={s.listaApps}>
+          {(ix.datos?.apps ?? []).map((a) => (
+            <li key={a.id}>
               <label className={s.casilla}>
-                <input type="checkbox" checked={marcados.has(p.id)} onChange={() => alternar(p.id)} />
+                <input type="checkbox" checked={Boolean(ix.deEquipo.get(equipo.id)?.has(a.id))} disabled={pendientes.has(a.id)} onChange={() => alternarApp(a)} />
                 <span>
-                  <strong>{p.nombre}</strong>
-                  <span className={s.sub}>{p.email}{p.activo ? '' : ' · inactiva'}</span>
+                  {a.nombre}
+                  {!a.activa && <span className={s.sub}>Aplicación inactiva</span>}
                 </span>
               </label>
             </li>
           ))}
         </ul>
-      )}
-      {error && <Aviso>{error}</Aviso>}
+      </section>
+
+      <section className={s.fichaSeccion} aria-labelledby="equipo-miembros">
+        <h3 id="equipo-miembros">Miembros ({equipo.miembros.length})</h3>
+        <BuscarPersona
+          personas={ix.datos?.usuarios ?? []}
+          excluir={miembros}
+          etiqueta={`Buscar persona para agregar a ${equipo.nombre}`}
+          placeholder="Agregar una persona…"
+          onElegir={(p) => tras(fijarMiembros(equipo, [...ids, p.id]))}
+        />
+        {equipo.miembros.length === 0 ? (
+          <p className={s.sub}>Sin miembros.</p>
+        ) : (
+          <ul className={s.listaFilas}>
+            {[...equipo.miembros].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map((m) => {
+              const u = ix.personaPorId.get(m.id);
+              return (
+                <li key={m.id} className={u?.activo === false ? s.inactiva : undefined}>
+                  <span>
+                    <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(m.id)}>{m.nombre}</button>
+                    <span className={s.sub}>{m.email}{u?.activo === false ? ' · inactiva' : ''}</span>
+                  </span>
+                  <BotonIcono icono={X} etiqueta={`Sacar a ${m.nombre} de ${equipo.nombre}`} onClick={() => tras(fijarMiembros(equipo, ids.filter((id) => id !== m.id)))} />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </Modal>
   );
 }
 
 export default function EquiposTab() {
-  const { datos, cargando, error, recargar } = useCarga('/equipos');
+  const ix = useDatos();
   const [formulario, setFormulario] = useState(null); // { equipo? }
-  const [miembros, setMiembros] = useState(null);
+  const [abierto, setAbierto] = useState(null); // id
   const [aEliminar, setAEliminar] = useState(null);
   const [errorAccion, setErrorAccion] = useState(null);
   const [eliminando, setEliminando] = useState(false);
@@ -140,7 +157,8 @@ export default function EquiposTab() {
     try {
       await api.delete(`/equipos/${aEliminar.id}`);
       setAEliminar(null);
-      await recargar();
+      setAbierto(null);
+      await ix.recargar();
     } catch (err) {
       setErrorAccion(err.message);
       setAEliminar(null);
@@ -149,7 +167,9 @@ export default function EquiposTab() {
     }
   }
 
-  if (cargando && !datos) return <Cargando />;
+  if (ix.cargando && !ix.datos) return <Cargando />;
+  const equipos = ix.datos?.equipos ?? [];
+  const equipo = abierto != null ? ix.equipoPorId.get(abierto) : null;
 
   return (
     <section aria-label="Equipos">
@@ -158,55 +178,50 @@ export default function EquiposTab() {
         <Button icono={Plus} onClick={() => setFormulario({})}>Nuevo equipo</Button>
       </div>
 
-      {(error || errorAccion) && <Aviso>{errorAccion || error}</Aviso>}
+      {(ix.error || errorAccion) && <Aviso>{errorAccion || ix.error}</Aviso>}
 
-      {datos?.length === 0 && <p className={s.vacio}>Aún no hay equipos.</p>}
+      {equipos.length === 0 && <p className={s.vacio}>Aún no hay equipos.</p>}
       <div className={s.tarjetas}>
-        {(datos ?? []).map((e) => (
-          <article key={e.id} className={s.tarjetaEquipo}>
-            <header>
-              <h2>{e.nombre}</h2>
-              <div className={s.acciones}>
-                <BotonIcono icono={Pencil} etiqueta={`Editar ${e.nombre}`} onClick={() => setFormulario({ equipo: e })} />
-                <BotonIcono icono={Trash2} peligro etiqueta={`Eliminar ${e.nombre}`} onClick={() => setAEliminar(e)} />
-              </div>
-            </header>
-            {e.descripcion && <p className={s.sub}>{e.descripcion}</p>}
-            <div className={s.insignias}>
-              {e.miembros.slice(0, 6).map((m) => (
-                <Insignia key={m.id}>{m.nombre}</Insignia>
-              ))}
-              {e.miembros.length > 6 && <Insignia>+{e.miembros.length - 6}</Insignia>}
-              {e.miembros.length === 0 && <span className={s.sub}>Sin miembros</span>}
-            </div>
-            <Button variante="secundario" icono={Users} onClick={() => setMiembros(e)}>
-              Miembros ({e.miembros.length})
-            </Button>
-          </article>
-        ))}
+        {equipos.map((e) => {
+          const apps = [...(ix.deEquipo.get(e.id)?.keys() ?? [])].map((id) => ix.appPorId.get(id)).filter(Boolean);
+          return (
+            <button key={e.id} type="button" className={`${s.tarjeta} ${s.tarjetaBoton}`} onClick={() => setAbierto(e.id)}>
+              <span className={s.tarjetaTitulo}>
+                {e.nombre}
+                <ChevronRight size={18} aria-hidden="true" />
+              </span>
+              {e.descripcion && <span className={s.sub}>{e.descripcion}</span>}
+              <span className={s.cifra}>
+                {e.miembros.length} <span className={s.sub}>{e.miembros.length === 1 ? 'miembro' : 'miembros'}</span>
+              </span>
+              <span className={s.insignias}>
+                {apps.length ? apps.map((a) => <Insignia key={a.id}>{a.nombre}</Insignia>) : <span className={s.sub}>Sin aplicaciones</span>}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
+      {equipo && (
+        <FichaEquipo
+          key={equipo.id}
+          equipo={equipo}
+          onCerrar={() => setAbierto(null)}
+          onEditar={() => setFormulario({ equipo })}
+          onEliminar={() => setAEliminar(equipo)}
+        />
+      )}
       {formulario && (
         <ModalEquipo
           key={formulario.equipo?.id ?? 'nuevo'}
           equipo={formulario.equipo}
           abierto
           onCerrar={() => setFormulario(null)}
-          onGuardado={() => {
+          onGuardado={(r) => {
             setFormulario(null);
-            recargar();
-          }}
-        />
-      )}
-      {miembros && (
-        <ModalMiembros
-          key={miembros.id}
-          equipo={miembros}
-          abierto
-          onCerrar={() => setMiembros(null)}
-          onGuardado={() => {
-            setMiembros(null);
-            recargar();
+            // Un equipo nuevo se abre de una vez para darle aplicaciones y miembros.
+            if (!formulario.equipo && r?.id) setAbierto(r.id);
+            ix.recargar();
           }}
         />
       )}

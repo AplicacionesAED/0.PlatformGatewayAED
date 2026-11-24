@@ -11,6 +11,11 @@ const consultaSchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
   accion: z.string().trim().max(60).optional(),
   actorId: z.coerce.number().int().positive().optional(),
+  // Todo lo que toca a una persona: lo que hizo y lo que se hizo sobre ella (su cuenta, sus accesos, sus equipos).
+  usuarioId: z.coerce.number().int().positive().optional(),
+  // Dias completos en hora de Colombia (AAAA-MM-DD), ambos incluidos.
+  desde: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  hasta: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 const router = express.Router();

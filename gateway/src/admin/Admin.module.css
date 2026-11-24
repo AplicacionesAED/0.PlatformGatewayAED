@@ -1,4 +1,4 @@
-/* Administracion del portal: barra azul marino (igual que las apps), pestañas, tablas, matriz de accesos y tarjetas de equipo. */
+/* Administracion del portal: barra azul marino (igual que las apps), pestañas, tablas, tarjetas y fichas laterales. */
 
 .barra {
   background: var(--color-brand-deep);
@@ -245,115 +245,366 @@ section[aria-label] {
   gap: 6px;
 }
 
-.acciones {
-  display: flex;
-  justify-content: flex-end;
-  gap: 2px;
-}
-
 .vacio {
   padding: var(--space-xl);
   text-align: center;
   color: var(--color-ink-muted);
 }
 
-/* ---------- Matriz de accesos ---------- */
+/* ---------- Personas: filtros, seleccion y acciones en lote ---------- */
 
-.matriz th[scope='row'] {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  min-width: 230px;
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
   background: #fff;
+  color: var(--color-ink-secondary);
+  font-size: var(--text-data-size);
   font-weight: 600;
-  text-transform: none;
+  cursor: pointer;
 }
 
-.matriz thead th:first-child {
-  left: 0;
-  z-index: 2;
+.chip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
-.celdaApp {
-  min-width: 110px;
-  text-align: center !important;
+.chip[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  background: var(--color-primary);
+  color: var(--color-primary-ink-on);
 }
 
-.celdaCheck {
-  position: relative;
-  text-align: center !important;
+.chipTotal {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
 }
 
-.celdaCheck input {
-  width: 22px;
-  height: 22px;
+.barraLote {
+  position: sticky;
+  top: 8px;
+  z-index: var(--z-sticky);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  padding: 10px 14px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-info-surface);
+  box-shadow: var(--shadow-floating);
+}
+
+.barraLote strong {
+  margin-right: auto;
+  color: var(--color-info-ink);
+}
+
+.celdaMarca {
+  width: 48px;
+  padding-right: 0 !important;
+}
+
+.celdaMarca input,
+.listaApps input {
+  width: 20px;
+  height: 20px;
   cursor: pointer;
   accent-color: var(--color-primary);
 }
 
-.via {
-  position: absolute;
-  top: 50%;
-  right: 14px;
-  display: grid;
-  place-items: center;
-  width: 20px;
-  height: 20px;
-  margin-top: -10px;
-  border-radius: 50%;
-  background: var(--color-info-surface);
-  color: var(--color-info-ink);
+.filaAbrible {
+  cursor: pointer;
 }
 
-.grupo th {
-  padding-block: 8px;
-  background: var(--color-surface-sunken);
-  font-size: var(--text-label-size);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--color-ink-secondary);
+.celdaFlecha {
+  width: 40px;
+  color: var(--color-ink-muted);
 }
 
-.matriz .grupo th {
-  position: static;
-  min-width: 0;
-  background: var(--color-surface-sunken);
+.nombreBoton {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 600;
+  color: var(--color-ink);
+  text-align: left;
+  cursor: pointer;
 }
 
-/* ---------- Equipos ---------- */
+.nombreBoton:hover {
+  color: var(--color-primary);
+  text-decoration: underline;
+}
+
+.enlace {
+  align-self: flex-start;
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.enlace:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Tarjetas (equipos y aplicaciones) ---------- */
 
 .tarjetas {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--space-md);
 }
 
-.tarjetaEquipo {
+.tarjeta {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: var(--space-sm);
   padding: var(--space-md) var(--space-lg) var(--space-lg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: #fff;
+  color: var(--color-ink);
+  text-align: left;
 }
 
-.tarjetaEquipo header {
+.tarjetaBoton {
+  cursor: pointer;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.tarjetaBoton:hover {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-floating);
+}
+
+.tarjetaTitulo {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-sm);
-}
-
-.tarjetaEquipo h2 {
+  width: 100%;
   font-size: var(--text-headline-size);
   font-weight: var(--text-headline-weight);
 }
 
-.tarjetaEquipo .insignias {
+.tarjetaTitulo svg {
+  flex: none;
+  color: var(--color-ink-muted);
+}
+
+.cifra {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.cifra .sub {
+  display: inline;
+}
+
+/* ---------- Fichas (paneles laterales) ---------- */
+
+.fichaCabecera {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.fichaCabecera:empty {
+  display: none;
+}
+
+.fichaAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.fichaSeccion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--color-border);
+}
+
+.fichaSeccion h3 {
+  font-size: var(--text-title-size);
+  font-weight: 700;
+}
+
+.listaApps,
+.listaFilas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.listaApps li,
+.listaFilas li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  min-height: 48px;
+  padding: 2px 6px 2px 14px;
+}
+
+.listaApps li + li,
+.listaFilas li + li {
+  border-top: 1px solid var(--color-border);
+}
+
+.listaFilas li > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.listaFilas li > span:has(> svg) {
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.listaFilas li > span:has(> svg) .sub {
+  display: inline;
+}
+
+.agregar {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+.agregar select {
   flex: 1;
-  align-content: flex-start;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.actividad {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: var(--text-data-size);
+}
+
+.actividad li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-left: 12px;
+  border-left: 2px solid var(--color-border-strong);
+}
+
+.actividadFecha {
+  font-size: var(--text-label-size);
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Buscador de personas ---------- */
+
+.buscarPersona {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.resultados {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+  box-shadow: var(--shadow-floating);
+}
+
+.resultado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--color-ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.resultado:hover,
+.resultado:focus-visible {
+  background: var(--color-surface-hover);
+}
+
+.sinResultados {
+  padding: 10px;
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+}
+
+/* ---------- Auditoria ---------- */
+
+.filtrosAuditoria {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+}
+
+.filtro input[type='date'] {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.filtroPersona {
+  flex: 1 1 260px;
+  max-width: 360px;
+}
+
+.personaElegida {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding-left: 14px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-info-surface);
+  font-size: var(--text-data-size);
 }
 
 /* ---------- Formularios y dialogos ---------- */
@@ -377,24 +628,6 @@ section[aria-label] {
   height: 20px;
   flex: none;
   accent-color: var(--color-primary);
-}
-
-.listaMarcar {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  max-height: 320px;
-  overflow-y: auto;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-}
-
-.listaMarcar li + li {
-  border-top: 1px solid var(--color-border);
-}
-
-.listaMarcar .casilla {
-  padding: 4px 14px;
 }
 
 .temporal {

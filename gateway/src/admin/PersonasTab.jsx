@@ -1,47 +1,12 @@
 import { useMemo, useState } from 'react';
-import { Check, Copy, KeyRound, Power, Search, ShieldCheck, ShieldOff, UserPlus } from 'lucide-react';
+import { ChevronRight, Power, Search, UserPlus, Users, AppWindow, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.jsx';
-import { Aviso, BotonIcono, Button, Campo, Cargando, Insignia, Modal } from '../components/ui.jsx';
-import { formatoFecha, useCarga } from './useCarga.js';
+import { Aviso, Button, Campo, Cargando, Insignia, Modal } from '../components/ui.jsx';
+import { coincide, fijarMiembros, normalizar, useAbrirPersona, useDatos } from './datos.jsx';
+import { InsigniasPersona, ModalTemporal } from './FichaPersona.jsx';
+import { formatoFecha } from './useCarga.js';
 import s from './Admin.module.css';
-
-const normalizar = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
-
-// La contraseña temporal se muestra UNA vez: el servicio no la guarda en claro y no hay forma de volver a verla.
-function ModalTemporal({ datos, onCerrar }) {
-  const [copiada, setCopiada] = useState(false);
-  async function copiar() {
-    try {
-      await navigator.clipboard.writeText(datos.password);
-      setCopiada(true);
-    } catch {
-      setCopiada(false);
-    }
-  }
-  return (
-    <Modal abierto={Boolean(datos)} onCerrar={onCerrar} titulo={datos?.titulo ?? ''} pie={<Button onClick={onCerrar}>Listo, ya la anoté</Button>}>
-      {datos?.password ? (
-        <>
-          <p>
-            Contraseña temporal para <strong>{datos.email}</strong>:
-          </p>
-          <div className={s.temporal}>
-            <code>{datos.password}</code>
-            <Button variante="secundario" icono={copiada ? Check : Copy} onClick={copiar}>
-              {copiada ? 'Copiada' : 'Copiar'}
-            </Button>
-          </div>
-          <Aviso tipo="info">Solo se muestra esta vez. Entrégasela a la persona por un canal seguro: deberá cambiarla al entrar.</Aviso>
-        </>
-      ) : (
-        <p>
-          <strong>{datos?.email}</strong> entrará con su cuenta de Microsoft. No necesita contraseña.
-        </p>
-      )}
-    </Modal>
-  );
-}
 
 function ModalNueva({ abierto, onCerrar, onCreada }) {
   const [email, setEmail] = useState('');
@@ -95,61 +60,167 @@ function ModalNueva({ abierto, onCerrar, onCreada }) {
   );
 }
 
-export default function PersonasTab() {
+const LOTE = {
+  equipo: { titulo: 'Agregar a un equipo', boton: 'Agregar' },
+  app: { titulo: 'Dar acceso a una aplicación', boton: 'Dar acceso' },
+  desactivar: { titulo: 'Desactivar personas', boton: 'Desactivar' },
+};
+
+// Acciones sobre varias personas a la vez. El equipo se fija en una sola llamada; apps y desactivar van de a una persona
+// (el servicio no tiene operacion en lote) y se informa cuantas fallaron.
+function ModalLote({ tipo, personas, onCerrar, onHecho }) {
   const { usuario: yo } = useAuth();
-  const { datos, cargando, error, recargar } = useCarga('/usuarios');
+  const ix = useDatos();
+  const [destino, setDestino] = useState('');
+  const [progreso, setProgreso] = useState(null);
+  const [error, setError] = useState(null);
+
+  const afectadas =
+    tipo === 'desactivar'
+      ? personas.filter((p) => p.activo && p.id !== yo.id)
+      : tipo === 'app'
+        ? personas.filter((p) => !ix.directos.get(p.id)?.has(Number(destino)))
+        : personas;
+
+  async function ejecutar() {
+    setError(null);
+    let fallos = 0;
+    try {
+      if (tipo === 'equipo') {
+        const equipo = ix.equipoPorId.get(Number(destino));
+        setProgreso(0);
+        await fijarMiembros(equipo, [...equipo.miembros.map((m) => m.id), ...afectadas.map((p) => p.id)]);
+        setProgreso(afectadas.length);
+      } else {
+        for (const [i, p] of afectadas.entries()) {
+          setProgreso(i);
+          try {
+            if (tipo === 'app') await api.post('/accesos', { appId: Number(destino), usuarioId: p.id });
+            else await api.patch(`/usuarios/${p.id}`, { activo: false });
+          } catch {
+            fallos += 1;
+          }
+        }
+      }
+    } catch (err) {
+      setError(err.message);
+      setProgreso(null);
+      return;
+    }
+    await ix.recargar();
+    onHecho(fallos ? `${fallos} de ${afectadas.length} no se pudieron cambiar. Revisa la auditoría.` : null);
+  }
+
+  const trabajando = progreso !== null;
+  const listo = tipo === 'desactivar' || destino;
+
+  return (
+    <Modal
+      abierto
+      onCerrar={trabajando ? () => {} : onCerrar}
+      titulo={LOTE[tipo].titulo}
+      pie={
+        <>
+          <Button variante="secundario" disabled={trabajando} onClick={onCerrar}>Cancelar</Button>
+          <Button variante={tipo === 'desactivar' ? 'peligro' : 'primario'} cargando={trabajando} disabled={!listo || afectadas.length === 0} onClick={ejecutar}>
+            {LOTE[tipo].boton} ({afectadas.length})
+          </Button>
+        </>
+      }
+    >
+      {tipo === 'equipo' && (
+        <Campo etiqueta="Equipo">
+          {(id, aria) => (
+            <select id={id} {...aria} value={destino} onChange={(e) => setDestino(e.target.value)}>
+              <option value="">Elige un equipo…</option>
+              {ix.datos.equipos.map((e) => (
+                <option key={e.id} value={e.id}>{e.nombre}</option>
+              ))}
+            </select>
+          )}
+        </Campo>
+      )}
+      {tipo === 'app' && (
+        <Campo etiqueta="Aplicación" ayuda="Se da directamente a cada persona. Quienes ya la tienen directa se omiten.">
+          {(id, aria) => (
+            <select id={id} {...aria} value={destino} onChange={(e) => setDestino(e.target.value)}>
+              <option value="">Elige una aplicación…</option>
+              {ix.datos.apps.map((a) => (
+                <option key={a.id} value={a.id}>{a.nombre}{a.activa ? '' : ' (inactiva)'}</option>
+              ))}
+            </select>
+          )}
+        </Campo>
+      )}
+      {tipo === 'desactivar' && (
+        <p>
+          {afectadas.length} {afectadas.length === 1 ? 'persona perderá' : 'personas perderán'} el acceso al portal y a todas las aplicaciones. Sus sesiones abiertas se cierran de inmediato.
+          {afectadas.length < personas.length && ' Las que ya están inactivas (y tú) se omiten.'}
+        </p>
+      )}
+      {trabajando && tipo !== 'equipo' && (
+        <p className={s.sub} role="status">
+          Procesando {progreso + 1} de {afectadas.length}…
+        </p>
+      )}
+      {error && <Aviso>{error}</Aviso>}
+    </Modal>
+  );
+}
+
+export default function PersonasTab() {
+  const ix = useDatos();
+  const abrirPersona = useAbrirPersona();
   const [busqueda, setBusqueda] = useState('');
+  const [filtro, setFiltro] = useState('todas');
+  const [seleccion, setSeleccion] = useState(() => new Set());
   const [nueva, setNueva] = useState(false);
   const [temporal, setTemporal] = useState(null);
-  const [confirmar, setConfirmar] = useState(null); // { persona, tipo }
-  const [errorAccion, setErrorAccion] = useState(null);
-  const [trabajando, setTrabajando] = useState(false);
+  const [lote, setLote] = useState(null);
+  const [avisoLote, setAvisoLote] = useState(null);
+
+  const personas = ix.datos?.usuarios ?? [];
+
+  const filtros = useMemo(() => {
+    if (!ix.datos) return [];
+    const lista = [
+      ['todas', 'Todas', () => true],
+      ['activas', 'Activas', (u) => u.activo],
+      ['inactivas', 'Inactivas', (u) => !u.activo],
+      ['admins', 'Administradores', (u) => u.esAdmin],
+      ['sinApps', 'Sin aplicaciones', (u) => u.activo && ix.appsDe(u).length === 0],
+      ['nunca', 'Nunca han entrado', (u) => !u.ultimoLogin],
+      ['temporal', 'Contraseña temporal', (u) => u.debeCambiarPassword],
+    ];
+    return lista.map(([clave, nombre, fn]) => ({ clave, nombre, fn, total: ix.datos.usuarios.filter(fn).length }));
+  }, [ix]);
 
   const filas = useMemo(() => {
     const q = normalizar(busqueda.trim());
-    return (datos ?? []).filter((u) => !q || normalizar(`${u.nombre} ${u.email}`).includes(q));
-  }, [datos, busqueda]);
+    const fn = filtros.find((f) => f.clave === filtro)?.fn ?? (() => true);
+    return personas.filter((u) => fn(u) && coincide(q, u.nombre, u.email));
+  }, [personas, busqueda, filtro, filtros]);
 
-  async function ejecutar() {
-    const { persona, tipo } = confirmar;
-    setTrabajando(true);
-    setErrorAccion(null);
-    try {
-      if (tipo === 'reset') {
-        const r = await api.post(`/usuarios/${persona.id}/reset-password`);
-        setTemporal({ titulo: 'Contraseña restablecida', email: persona.email, password: r.passwordTemporal });
-      } else if (tipo === 'desactivar') await api.patch(`/usuarios/${persona.id}`, { activo: false });
-      else if (tipo === 'hacerAdmin') await api.patch(`/usuarios/${persona.id}`, { esAdmin: true });
-      else if (tipo === 'quitarAdmin') await api.patch(`/usuarios/${persona.id}`, { esAdmin: false });
-      setConfirmar(null);
-      await recargar();
-    } catch (err) {
-      setErrorAccion(err.message);
-      setConfirmar(null);
-    } finally {
-      setTrabajando(false);
-    }
-  }
+  if (ix.cargando && !ix.datos) return <Cargando />;
 
-  async function activar(persona) {
-    setErrorAccion(null);
-    try {
-      await api.patch(`/usuarios/${persona.id}`, { activo: true });
-      await recargar();
-    } catch (err) {
-      setErrorAccion(err.message);
-    }
-  }
-
-  const textoConfirmar = {
-    desactivar: (p) => [`Desactivar a ${p.nombre}`, 'Perderá el acceso al portal y a todas las aplicaciones en menos de una hora. Sus sesiones abiertas se cierran de inmediato.', 'Desactivar'],
-    reset: (p) => [`Restablecer la contraseña de ${p.nombre}`, 'Se generará una contraseña temporal nueva y se cerrarán sus sesiones. La anterior deja de servir.', 'Restablecer'],
-    hacerAdmin: (p) => [`Hacer administrador a ${p.nombre}`, 'Podrá crear personas, dar y quitar accesos y ver la auditoría.', 'Hacer administrador'],
-    quitarAdmin: (p) => [`Quitar administrador a ${p.nombre}`, 'Dejará de poder administrar el portal.', 'Quitar rol'],
-  };
-  const [tituloConf, cuerpoConf, botonConf] = confirmar ? textoConfirmar[confirmar.tipo](confirmar.persona) : [];
-
-  if (cargando && !datos) return <Cargando />;
+  const todasMarcadas = filas.length > 0 && filas.every((p) => seleccion.has(p.id));
+  const alternar = (id) =>
+    setSeleccion((actual) => {
+      const n = new Set(actual);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+  const alternarTodas = () =>
+    setSeleccion((actual) => {
+      const n = new Set(actual);
+      for (const p of filas) {
+        if (todasMarcadas) n.delete(p.id);
+        else n.add(p.id);
+      }
+      return n;
+    });
+  const seleccionadas = personas.filter((p) => seleccion.has(p.id));
 
   return (
     <section aria-label="Personas">
@@ -161,79 +232,88 @@ export default function PersonasTab() {
         <Button icono={UserPlus} onClick={() => setNueva(true)}>Nueva persona</Button>
       </div>
 
-      {(error || errorAccion) && <Aviso>{errorAccion || error}</Aviso>}
+      <div className={s.chips} role="group" aria-label="Filtrar personas">
+        {filtros.map((f) => (
+          <button key={f.clave} type="button" className={s.chip} aria-pressed={filtro === f.clave} onClick={() => setFiltro(f.clave)}>
+            {f.nombre} <span className={s.chipTotal}>{f.total}</span>
+          </button>
+        ))}
+      </div>
+
+      {ix.error && <Aviso>{ix.error}</Aviso>}
+      {avisoLote && <Aviso>{avisoLote}</Aviso>}
+
+      {seleccion.size > 0 && (
+        <div className={s.barraLote} role="region" aria-label="Acciones sobre las personas seleccionadas">
+          <strong>{seleccion.size} {seleccion.size === 1 ? 'seleccionada' : 'seleccionadas'}</strong>
+          <Button variante="secundario" icono={Users} onClick={() => setLote('equipo')} disabled={!ix.datos.equipos.length}>
+            Agregar a equipo
+          </Button>
+          <Button variante="secundario" icono={AppWindow} onClick={() => setLote('app')}>
+            Dar aplicación
+          </Button>
+          <Button variante="secundario" icono={Power} onClick={() => setLote('desactivar')}>
+            Desactivar
+          </Button>
+          <Button variante="secundario" icono={X} onClick={() => setSeleccion(new Set())}>
+            Quitar selección
+          </Button>
+        </div>
+      )}
 
       <div className={s.tablaCaja}>
         <table className={s.tabla}>
           <thead>
             <tr>
+              <th scope="col" className={s.celdaMarca}>
+                <input type="checkbox" checked={todasMarcadas} onChange={alternarTodas} aria-label="Seleccionar todas las personas visibles" />
+              </th>
               <th scope="col">Persona</th>
               <th scope="col">Estado</th>
-              <th scope="col">Equipos</th>
+              <th scope="col">Aplicaciones</th>
               <th scope="col">Último ingreso</th>
-              <th scope="col"><span className={s.soloLectores}>Acciones</span></th>
+              <th scope="col"><span className={s.soloLectores}>Abrir</span></th>
             </tr>
           </thead>
           <tbody>
             {filas.map((p) => {
-              const soyYo = p.id === yo.id;
+              const apps = ix.appsDe(p);
               return (
-                <tr key={p.id} className={p.activo ? undefined : s.inactiva}>
+                <tr key={p.id} className={`${s.filaAbrible} ${p.activo ? '' : s.inactiva}`} onClick={() => abrirPersona(p.id)}>
+                  <td className={s.celdaMarca} onClick={(e) => e.stopPropagation()}>
+                    <input type="checkbox" checked={seleccion.has(p.id)} onChange={() => alternar(p.id)} aria-label={`Seleccionar a ${p.nombre}`} />
+                  </td>
                   <td>
-                    <strong>{p.nombre}</strong>
+                    <button type="button" className={s.nombreBoton} onClick={(e) => { e.stopPropagation(); abrirPersona(p.id); }}>
+                      {p.nombre}
+                    </button>
                     <span className={s.sub}>{p.email}</span>
                   </td>
                   <td>
-                    <div className={s.insignias}>
-                      <Insignia tono={p.activo ? 'ok' : 'error'}>{p.activo ? 'Activa' : 'Inactiva'}</Insignia>
-                      {p.esAdmin && <Insignia tono="info" icono={ShieldCheck}>Administrador</Insignia>}
-                      {p.corporativo ? (
-                        <Insignia>{p.microsoftVinculado ? 'Microsoft' : 'Microsoft (aún no ha entrado)'}</Insignia>
-                      ) : !p.tienePassword ? (
-                        <Insignia tono="aviso">Sin contraseña</Insignia>
-                      ) : p.debeCambiarPassword ? (
-                        <Insignia tono="aviso">Contraseña temporal</Insignia>
-                      ) : (
-                        <Insignia>Contraseña</Insignia>
-                      )}
-                    </div>
+                    <InsigniasPersona p={p} />
                   </td>
                   <td>
-                    {p.equipos.length ? (
+                    {apps.length ? (
                       <div className={s.insignias}>
-                        {p.equipos.map((e) => (
-                          <Insignia key={e.id}>{e.nombre}</Insignia>
+                        {apps.slice(0, 3).map((a) => (
+                          <Insignia key={a.id}>{a.nombre}</Insignia>
                         ))}
+                        {apps.length > 3 && <Insignia>+{apps.length - 3}</Insignia>}
                       </div>
                     ) : (
-                      <span className={s.sub}>—</span>
+                      <span className={s.sub}>Ninguna</span>
                     )}
                   </td>
-                  <td>{formatoFecha(p.ultimoLogin) ?? <span className={s.sub}>Nunca</span>}</td>
-                  <td>
-                    <div className={s.acciones}>
-                      {!p.corporativo && <BotonIcono icono={KeyRound} etiqueta={`Restablecer contraseña de ${p.nombre}`} onClick={() => setConfirmar({ persona: p, tipo: 'reset' })} />}
-                      <BotonIcono
-                        icono={p.esAdmin ? ShieldOff : ShieldCheck}
-                        etiqueta={soyYo ? 'No puedes cambiar tu propio rol' : p.esAdmin ? `Quitar administrador a ${p.nombre}` : `Hacer administrador a ${p.nombre}`}
-                        disabled={soyYo}
-                        onClick={() => setConfirmar({ persona: p, tipo: p.esAdmin ? 'quitarAdmin' : 'hacerAdmin' })}
-                      />
-                      <BotonIcono
-                        icono={Power}
-                        peligro={p.activo}
-                        etiqueta={soyYo ? 'No puedes desactivarte a ti mismo' : p.activo ? `Desactivar a ${p.nombre}` : `Activar a ${p.nombre}`}
-                        disabled={soyYo}
-                        onClick={() => (p.activo ? setConfirmar({ persona: p, tipo: 'desactivar' }) : activar(p))}
-                      />
-                    </div>
+                  <td className={s.nowrap}>{formatoFecha(p.ultimoLogin) ?? <span className={s.sub}>Nunca</span>}</td>
+                  <td className={s.celdaFlecha}>
+                    <ChevronRight size={18} aria-hidden="true" />
                   </td>
                 </tr>
               );
             })}
           </tbody>
         </table>
-        {filas.length === 0 && <p className={s.vacio}>{busqueda ? 'Ninguna persona coincide con la búsqueda.' : 'Aún no hay personas.'}</p>}
+        {filas.length === 0 && <p className={s.vacio}>{busqueda || filtro !== 'todas' ? 'Ninguna persona coincide.' : 'Aún no hay personas.'}</p>}
       </div>
 
       <ModalNueva
@@ -241,25 +321,30 @@ export default function PersonasTab() {
         onCerrar={() => setNueva(false)}
         onCreada={(r) => {
           setNueva(false);
-          setTemporal({ titulo: 'Persona creada', email: r.usuario.email, password: r.passwordTemporal });
-          recargar();
+          setTemporal({ titulo: 'Persona creada', email: r.usuario.email, password: r.passwordTemporal, id: r.usuario.id });
+          ix.recargar();
         }}
       />
-      <ModalTemporal datos={temporal} onCerrar={() => setTemporal(null)} />
-
-      <Modal
-        abierto={Boolean(confirmar)}
-        onCerrar={() => setConfirmar(null)}
-        titulo={tituloConf ?? ''}
-        pie={
-          <>
-            <Button variante="secundario" onClick={() => setConfirmar(null)}>Cancelar</Button>
-            <Button variante={confirmar?.tipo === 'desactivar' ? 'peligro' : 'primario'} cargando={trabajando} onClick={ejecutar}>{botonConf}</Button>
-          </>
-        }
-      >
-        <p>{cuerpoConf}</p>
-      </Modal>
+      <ModalTemporal
+        datos={temporal}
+        onCerrar={() => {
+          // Tras crearla se abre su ficha para darle aplicaciones y equipos.
+          if (temporal?.id) abrirPersona(temporal.id);
+          setTemporal(null);
+        }}
+      />
+      {lote && (
+        <ModalLote
+          tipo={lote}
+          personas={seleccionadas}
+          onCerrar={() => setLote(null)}
+          onHecho={(aviso) => {
+            setLote(null);
+            setSeleccion(new Set());
+            setAvisoLote(aviso);
+          }}
+        />
+      )}
     </section>
   );
 }

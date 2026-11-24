@@ -346,6 +346,30 @@ describe('portal-auth (HTTP)', () => {
       assert.ok(r.body.meta.total >= 1);
       assert.equal((await c.get('/api/auditoria?limit=999')).status, 422);
     });
+
+    it('filtra la auditoría por persona (lo que hizo y lo que se hizo sobre ella) y por fechas', async () => {
+      const adm = await persona('adm@gmail.test', { es_admin: true });
+      const ana = await persona('ana@gmail.test');
+      const beto = await persona('beto@gmail.test');
+      const { c } = await entrar('adm@gmail.test');
+      const eq = (await c.post('/api/equipos', { nombre: 'Obra' })).body.data;
+      await c.put(`/api/equipos/${eq.id}/miembros`, { usuarioIds: [ana.id] });
+      await c.post('/api/accesos', { appId: await appId('cartera'), usuarioId: ana.id });
+      await c.patch(`/api/usuarios/${beto.id}`, { nombre: 'Beto' });
+      await entrar('ana@gmail.test');
+
+      const deAna = (await c.get(`/api/auditoria?usuarioId=${ana.id}`)).body.data.map((f) => f.accion).sort();
+      assert.deepEqual(deAna, ['acceso.conceder', 'equipo.miembros', 'login.ok']);
+      const deBeto = (await c.get(`/api/auditoria?usuarioId=${beto.id}`)).body.data.map((f) => f.accion);
+      assert.deepEqual(deBeto, ['usuario.actualizar']);
+      // Lo que hizo el administrador (actor) tambien cuenta como suyo.
+      assert.ok((await c.get(`/api/auditoria?usuarioId=${adm.id}`)).body.meta.total >= 5);
+
+      const hoy = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
+      assert.ok((await c.get(`/api/auditoria?desde=${hoy}&hasta=${hoy}`)).body.meta.total >= 6);
+      assert.equal((await c.get('/api/auditoria?hasta=2000-01-01')).body.meta.total, 0);
+      assert.equal((await c.get('/api/auditoria?desde=ayer')).status, 422);
+    });
   });
 
   describe('login con Microsoft (servicio)', () => {

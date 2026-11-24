@@ -66,8 +66,9 @@ export function Cargando({ texto = 'Cargando…' }) {
   );
 }
 
-// Dialogo modal sobre <dialog>: el navegador maneja el foco, Escape y la capa de fondo.
-export function Modal({ abierto, onCerrar, titulo, children, pie, ancho = 480 }) {
+// Dialogo modal sobre <dialog>: el navegador maneja el foco, Escape y la capa de fondo. `lateral` lo pega al borde derecho a
+// toda la altura (fichas de persona, equipo y aplicacion).
+export function Modal({ abierto, onCerrar, titulo, children, pie, ancho = 480, lateral = false }) {
   const ref = useRef(null);
   useEffect(() => {
     const d = ref.current;
@@ -78,7 +79,7 @@ export function Modal({ abierto, onCerrar, titulo, children, pie, ancho = 480 })
   return (
     <dialog
       ref={ref}
-      className={s.modal}
+      className={`${s.modal} ${lateral ? s.lateral : ''}`}
       style={{ '--ancho': `${ancho}px` }}
       onCancel={(e) => {
         e.preventDefault();

@@ -31,7 +31,7 @@ Sin `PORTAL_JWT_PRIVATE_KEY_B64` en desarrollo se genera una llave efímera (las
 | `POST /api/auth/cambiar-password` | autenticado | cambio (obligatorio en el primer ingreso con temporal) |
 | `GET /api/me` | autenticado | persona, apps permitidas y equipos |
 | `GET /api/.well-known/jwks.json` | público | llave pública para verificar sesiones |
-| `/api/usuarios`, `/api/equipos`, `/api/apps`, `/api/accesos` (+ `/matriz`), `/api/auditoria` | solo `es_admin` | administración |
+| `/api/usuarios`, `/api/equipos`, `/api/apps`, `/api/accesos` (+ `/matriz`), `/api/auditoria` (filtros `accion`, `actorId`, `usuarioId` = todo lo que toca a una persona, `desde`/`hasta` en AAAA-MM-DD hora Colombia) | solo `es_admin` | administración |
 
 ## Sesión
 
