@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { ChevronRight, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
+import { ChevronRight, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
 import { fijarMiembros, useAbrirPersona, useDatos } from './datos.jsx';
-import { Avatar, IconoApp, InsigniaApp, colorApp, colorDe } from './colores.jsx';
+import { Avatar, IconoApp, IconoEquipo, InsigniaApp, colorApp, colorDe } from './colores.jsx';
 import s from './Admin.module.css';
 
 function ModalEquipo({ equipo, abierto, onCerrar, onGuardado }) {
@@ -86,9 +86,7 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
   return (
     <Modal abierto onCerrar={onCerrar} titulo={equipo.nombre} ancho={560} lateral>
       <div className={s.fichaHero} style={{ '--c': colorDe(equipo.id) }}>
-        <span className={s.iconoApp} aria-hidden="true">
-          <Users size={26} />
-        </span>
+        <IconoEquipo equipo={equipo} grande />
         <div className={s.fichaHeroTexto}>
           <span className={s.fichaHeroCifra}>{equipo.miembros.length}</span>
           <span className={s.fichaHeroDato}>{equipo.miembros.length === 1 ? 'miembro' : 'miembros'}{equipo.descripcion ? ` · ${equipo.descripcion}` : ''}</span>
@@ -198,9 +196,7 @@ export default function EquiposTab() {
           return (
             <button key={e.id} type="button" className={`${s.tarjeta} ${s.tarjetaBoton} ${s.tarjetaColor}`} style={{ '--c': colorDe(e.id) }} onClick={() => setAbierto(e.id)}>
               <span className={s.tarjetaTitulo}>
-                <span className={s.iconoApp} aria-hidden="true">
-                  <Users size={20} />
-                </span>
+                <IconoEquipo equipo={e} />
                 <span className={s.tarjetaNombre}>{e.nombre}</span>
                 <ChevronRight size={18} aria-hidden="true" />
               </span>
@@ -210,10 +206,10 @@ export default function EquiposTab() {
                   {e.miembros.length} <span className={s.sub}>{e.miembros.length === 1 ? 'miembro' : 'miembros'}</span>
                 </span>
                 <span className={s.pilaAvatares} aria-hidden="true">
-                  {e.miembros.slice(0, 5).map((m) => (
+                  {e.miembros.slice(0, 4).map((m) => (
                     <Avatar key={m.id} nombre={m.nombre} id={m.id} />
                   ))}
-                  {e.miembros.length > 5 && <span className={s.avatarMas}>+{e.miembros.length - 5}</span>}
+                  {e.miembros.length > 4 && <span className={s.avatarMas}>+{e.miembros.length - 4}</span>}
                 </span>
               </span>
               <span className={s.insignias}>

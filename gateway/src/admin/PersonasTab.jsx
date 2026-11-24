@@ -1,13 +1,32 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, Power, Search, UserPlus, Users, AppWindow, X } from 'lucide-react';
+import { ChevronRight, KeyRound, Power, Search, ShieldCheck, UserPlus, Users, AppWindow, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.jsx';
-import { Aviso, Button, Campo, Cargando, Insignia, Modal } from '../components/ui.jsx';
+import { Aviso, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
 import { coincide, fijarMiembros, normalizar, useAbrirPersona, useDatos } from './datos.jsx';
-import { InsigniasPersona, ModalTemporal } from './FichaPersona.jsx';
-import { Avatar, InsigniaApp } from './colores.jsx';
-import { formatoFecha } from './useCarga.js';
+import { ModalTemporal } from './FichaPersona.jsx';
+import { Avatar, MiniApp } from './colores.jsx';
+import { formatoCorto, formatoFecha } from './useCarga.js';
 import s from './Admin.module.css';
+
+// Como entra la persona, en una sola linea (la ficha muestra el detalle completo).
+function Metodo({ p }) {
+  if (p.corporativo) {
+    return (
+      <span className={s.metodo} title={p.microsoftVinculado ? 'Entra con su cuenta de Microsoft' : 'Entrará con Microsoft; aún no ha entrado'}>
+        <span className={s.logoMs} aria-hidden="true" />
+        Microsoft{p.microsoftVinculado ? '' : ' (pendiente)'}
+      </span>
+    );
+  }
+  if (!p.tienePassword) return <span className={`${s.metodo} ${s.metodoAviso}`}>Sin contraseña</span>;
+  return (
+    <span className={`${s.metodo} ${p.debeCambiarPassword ? s.metodoAviso : ''}`}>
+      <KeyRound size={13} aria-hidden="true" />
+      {p.debeCambiarPassword ? 'Contraseña temporal' : 'Contraseña'}
+    </span>
+  );
+}
 
 function ModalNueva({ abierto, onCerrar, onCreada }) {
   const [email, setEmail] = useState('');
@@ -263,7 +282,7 @@ export default function PersonasTab() {
       )}
 
       <div className={s.tablaCaja}>
-        <table className={s.tabla}>
+        <table className={`${s.tabla} ${s.tablaCompacta}`}>
           <thead>
             <tr>
               <th scope="col" className={s.celdaMarca}>
@@ -271,6 +290,7 @@ export default function PersonasTab() {
               </th>
               <th scope="col">Persona</th>
               <th scope="col">Estado</th>
+              <th scope="col">Ingreso con</th>
               <th scope="col">Aplicaciones</th>
               <th scope="col">Último ingreso</th>
               <th scope="col"><span className={s.soloLectores}>Abrir</span></th>
@@ -295,22 +315,31 @@ export default function PersonasTab() {
                       </span>
                     </div>
                   </td>
-                  <td>
-                    <InsigniasPersona p={p} />
+                  <td className={s.nowrap}>
+                    <span className={`${s.estado} ${p.activo ? s.estadoOk : s.estadoNo}`}>{p.activo ? 'Activa' : 'Inactiva'}</span>
+                    {p.esAdmin && (
+                      <span className={s.admin} title="Administrador del portal">
+                        <ShieldCheck size={13} aria-hidden="true" /> Admin
+                      </span>
+                    )}
+                  </td>
+                  <td className={s.nowrap}>
+                    <Metodo p={p} />
                   </td>
                   <td>
                     {apps.length ? (
-                      <div className={s.insignias}>
-                        {apps.slice(0, 3).map((a) => (
-                          <InsigniaApp key={a.id} app={a} />
+                      <div className={s.miniApps}>
+                        {apps.map((a) => (
+                          <MiniApp key={a.id} app={a} />
                         ))}
-                        {apps.length > 3 && <Insignia>+{apps.length - 3}</Insignia>}
                       </div>
                     ) : (
-                      <span className={s.sub}>Ninguna</span>
+                      <span className={s.ninguna}>Ninguna</span>
                     )}
                   </td>
-                  <td className={s.nowrap}>{formatoFecha(p.ultimoLogin) ?? <span className={s.sub}>Nunca</span>}</td>
+                  <td className={s.nowrap} title={formatoFecha(p.ultimoLogin) ?? undefined}>
+                    {formatoCorto(p.ultimoLogin) ?? <span className={s.ninguna}>Nunca</span>}
+                  </td>
                   <td className={s.celdaFlecha}>
                     <ChevronRight size={18} aria-hidden="true" />
                   </td>

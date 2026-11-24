@@ -475,7 +475,8 @@ section[aria-label] {
   font-weight: var(--text-headline-weight);
 }
 
-.tarjetaTitulo svg {
+/* Solo la flecha del titulo: el glifo dentro del cuadro de color conserva su blanco. */
+.tarjetaTitulo > svg {
   flex: none;
   color: var(--color-ink-muted);
 }
@@ -1013,4 +1014,204 @@ section[aria-label] {
   line-height: 1;
   color: color-mix(in srgb, var(--c) 78%, black);
   font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Equipos: iniciales sobre su color ---------- */
+
+.iconoEquipo {
+  font-size: 0.8125rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+
+.listaFilas .iconoEquipo {
+  font-size: 0.6875rem;
+}
+
+.iconoEquipoGrande {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+  font-size: 1.25rem;
+}
+
+/* ---------- Tarjetas: nada se sale ---------- */
+
+.tarjeta {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tarjetaNombre {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  line-height: 1.3;
+}
+
+.tarjeta > .sub {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.cifraFila {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.datosTarjeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.datosTarjeta > span {
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--c, var(--color-primary)) 12%, white);
+  color: color-mix(in srgb, var(--c, var(--color-primary)) 72%, black);
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- Tabla de personas compacta: una linea por persona ---------- */
+
+.tablaCompacta th,
+.tablaCompacta td {
+  padding: 6px 12px;
+}
+
+.tablaCompacta thead th {
+  padding-block: 9px;
+}
+
+.tablaCompacta .avatar {
+  width: 28px;
+  height: 28px;
+  font-size: 0.6875rem;
+}
+
+.tablaCompacta .personaCelda {
+  gap: 10px;
+}
+
+.tablaCompacta .nombreBoton {
+  font-size: var(--text-data-size);
+  line-height: 1.25;
+}
+
+.tablaCompacta .personaCelda .sub {
+  font-size: var(--text-label-size);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.estado::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--t);
+}
+
+.estadoOk {
+  --t: #1a8a4a;
+  color: var(--color-success-ink);
+}
+
+.estadoNo {
+  --t: var(--color-danger-ink);
+  color: var(--color-danger-ink);
+}
+
+.admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  background: var(--color-info-surface);
+  color: var(--color-info-ink);
+  font-size: var(--text-label-size);
+  font-weight: 600;
+}
+
+.metodo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-ink-secondary);
+}
+
+.metodo svg {
+  color: var(--color-ink-muted);
+}
+
+.metodoAviso,
+.metodoAviso svg {
+  color: var(--color-warning-ink);
+  font-weight: 600;
+}
+
+/* Marca de 4 cuadros de "entrar con Microsoft". */
+.logoMs {
+  display: inline-grid;
+  grid-template-columns: 5px 5px;
+  gap: 1px;
+  width: 11px;
+  height: 11px;
+  background:
+    linear-gradient(#f25022, #f25022) 0 0 / 5px 5px no-repeat,
+    linear-gradient(#7fba00, #7fba00) 6px 0 / 5px 5px no-repeat,
+    linear-gradient(#00a4ef, #00a4ef) 0 6px / 5px 5px no-repeat,
+    linear-gradient(#ffb900, #ffb900) 6px 6px / 5px 5px no-repeat;
+}
+
+.miniApps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.miniApp {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  background: var(--c);
+  color: #fff;
+}
+
+.ninguna {
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+}
+
+/* ---------- Selects con flecha propia, bien ubicada ---------- */
+
+.agregar select,
+.filtro select {
+  appearance: none;
+  padding-right: 40px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%232a425c' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;
+  cursor: pointer;
 }

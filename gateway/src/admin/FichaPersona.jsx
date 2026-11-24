@@ -6,7 +6,7 @@ import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../components/ui.jsx';
 import { ACCIONES, describir } from './auditoriaTexto.js';
 import { fijarMiembros, useDatos } from './datos.jsx';
-import { Avatar, IconoApp, colorApp, colorDe, tonoAccion } from './colores.jsx';
+import { Avatar, IconoApp, IconoEquipo, colorApp, colorDe, tonoAccion } from './colores.jsx';
 import { formatoFecha } from './useCarga.js';
 import s from './Admin.module.css';
 
@@ -266,9 +266,7 @@ export default function FichaPersona({ id, onCerrar }) {
                   {p.equipos.map((e) => (
                     <li key={e.id}>
                       <span>
-                        <span className={s.iconoApp} style={{ '--c': colorDe(e.id) }} aria-hidden="true">
-                          <Users size={15} />
-                        </span>{' '}
+                        <IconoEquipo equipo={e} />
                         {e.nombre}
                       </span>
                       <BotonIcono icono={X} etiqueta={`Sacar a ${p.nombre} de ${e.nombre}`} onClick={() => quitarDeEquipo(e)} />

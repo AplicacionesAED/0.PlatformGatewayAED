@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, Plus, Users, X } from 'lucide-react';
+import { ChevronRight, Plus, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
 import { useAbrirPersona, useDatos } from './datos.jsx';
-import { Avatar, IconoApp, colorApp, colorDe } from './colores.jsx';
+import { Avatar, IconoApp, IconoEquipo, colorApp } from './colores.jsx';
 import s from './Admin.module.css';
 
 // Quien entra a una app: equipos con acceso, personas con acceso directo y el total que resulta.
@@ -51,9 +51,7 @@ function FichaApp({ app, onCerrar }) {
             {equipos.map((e) => (
               <li key={e.id}>
                 <span>
-                  <span className={s.iconoApp} style={{ '--c': colorDe(e.id) }} aria-hidden="true">
-                    <Users size={15} />
-                  </span>{' '}
+                  <IconoEquipo equipo={e} />
                   {e.nombre} <span className={s.sub}>{e.miembros.length} {e.miembros.length === 1 ? 'miembro' : 'miembros'}</span>
                 </span>
                 <BotonIcono icono={X} etiqueta={`Quitar ${app.nombre} al equipo ${e.nombre}`} onClick={() => tras(api.delete(`/accesos/${ix.deEquipo.get(e.id).get(app.id)}`))} />
@@ -157,8 +155,10 @@ export default function AplicacionesTab() {
               <span className={s.proporcion} role="img" aria-label={`${parte}% de las personas activas`}>
                 <span style={{ width: `${parte}%` }} />
               </span>
-              <span className={s.sub}>
-                {equipos} {equipos === 1 ? 'equipo' : 'equipos'} · {directas} {directas === 1 ? 'acceso directo' : 'accesos directos'} · {parte}% del total
+              <span className={s.datosTarjeta}>
+                <span>{parte}% del total</span>
+                <span>{equipos} {equipos === 1 ? 'equipo' : 'equipos'}</span>
+                <span>{directas} {directas === 1 ? 'directo' : 'directos'}</span>
               </span>
             </button>
           );
