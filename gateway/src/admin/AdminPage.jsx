@@ -1,5 +1,5 @@
 import { Link, NavLink, Navigate, Route, Routes, useSearchParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { AppWindow, ArrowLeft, ScrollText, UserRound, UserX, Users } from 'lucide-react';
 import { useAuth } from '../auth/AuthContext.jsx';
 import MenuUsuario from '../auth/MenuUsuario.jsx';
 import PersonasTab from './PersonasTab.jsx';
@@ -7,14 +7,14 @@ import EquiposTab from './EquiposTab.jsx';
 import AplicacionesTab from './AplicacionesTab.jsx';
 import AuditoriaTab from './AuditoriaTab.jsx';
 import FichaPersona from './FichaPersona.jsx';
-import { AdminDatos } from './datos.jsx';
+import { AdminDatos, useDatos } from './datos.jsx';
 import s from './Admin.module.css';
 
 const SECCIONES = [
-  ['personas', 'Personas'],
-  ['equipos', 'Equipos'],
-  ['aplicaciones', 'Aplicaciones'],
-  ['auditoria', 'Auditoría'],
+  ['personas', 'Personas', UserRound],
+  ['equipos', 'Equipos', Users],
+  ['aplicaciones', 'Aplicaciones', AppWindow],
+  ['auditoria', 'Auditoría', ScrollText],
 ];
 
 // La ficha de persona se abre con ?persona=ID desde cualquier pestaña (tabla, equipo, aplicación, auditoría).
@@ -35,37 +35,68 @@ function FichaDesdeUrl() {
   );
 }
 
+// Cifras de un vistazo en la cabecera. "Sin aplicaciones" = personas activas que no entran a nada (revisar).
+function Indicadores() {
+  const ix = useDatos();
+  if (!ix.datos) return <div className={s.indicadores} aria-hidden="true" />;
+  const { usuarios, equipos, apps } = ix.datos;
+  const activas = usuarios.filter((u) => u.activo);
+  const sinApps = activas.filter((u) => ix.appsDe(u).length === 0).length;
+  const lista = [
+    ['Personas activas', activas.length, UserRound, '#20a7a1'],
+    ['Equipos', equipos.length, Users, '#8f95ff'],
+    ['Aplicaciones activas', apps.filter((a) => a.activa).length, AppWindow, '#22e76a'],
+    ['Sin aplicaciones', sinApps, UserX, sinApps ? '#ffb547' : '#22e76a'],
+  ];
+  return (
+    <dl className={s.indicadores}>
+      {lista.map(([nombre, valor, Icono, color]) => (
+        <div key={nombre} className={s.indicador} style={{ '--c': color }}>
+          <dt>
+            <Icono size={16} aria-hidden="true" /> {nombre}
+          </dt>
+          <dd>{valor}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 export default function AdminPage() {
   const { usuario } = useAuth();
 
   return (
     <AdminDatos>
-      <header className={s.barra}>
-        <div className={s.barraInterna}>
-          <img className={s.logo} src={`${import.meta.env.BASE_URL}aed-logo.png`} alt="AED" />
-          <span className={s.divisor} aria-hidden="true" />
-          <span className={s.producto}>Administración</span>
-          <Link to="/" className={s.volver}>
-            <ArrowLeft size={16} aria-hidden="true" /> Volver al portal
-          </Link>
-          <MenuUsuario usuario={usuario} />
+      <div className={s.cabecera}>
+        <header className={s.barra}>
+          <div className={s.barraInterna}>
+            <img className={s.logo} src={`${import.meta.env.BASE_URL}aed-logo.png`} alt="AED" />
+            <span className={s.divisor} aria-hidden="true" />
+            <span className={s.producto}>Administración</span>
+            <Link to="/" className={s.volver}>
+              <ArrowLeft size={16} aria-hidden="true" /> Volver al portal
+            </Link>
+            <MenuUsuario usuario={usuario} />
+          </div>
+        </header>
+
+        <div className={s.hero}>
+          <div>
+            <h1 className={s.titulo}>Accesos al portal</h1>
+            <p className={s.lead}>Quién entra a cada aplicación. Los permisos dentro de cada aplicación se siguen configurando en ella.</p>
+          </div>
+          <Indicadores />
+          <nav className={s.tabs} aria-label="Secciones de administración">
+            {SECCIONES.map(([ruta, nombre, Icono]) => (
+              <NavLink key={ruta} to={ruta} className={({ isActive }) => `${s.tab} ${isActive ? s.tabOn : ''}`}>
+                <Icono size={16} aria-hidden="true" /> {nombre}
+              </NavLink>
+            ))}
+          </nav>
         </div>
-      </header>
+      </div>
 
       <main className={s.main}>
-        <div>
-          <h1 className={s.titulo}>Accesos al portal</h1>
-          <p className={s.lead}>Quién entra a cada aplicación. Los permisos dentro de cada aplicación se siguen configurando en ella.</p>
-        </div>
-
-        <nav className={s.tabs} aria-label="Secciones de administración">
-          {SECCIONES.map(([ruta, nombre]) => (
-            <NavLink key={ruta} to={ruta} className={({ isActive }) => `${s.tab} ${isActive ? s.tabOn : ''}`}>
-              {nombre}
-            </NavLink>
-          ))}
-        </nav>
-
         <Routes>
           <Route index element={<Navigate to="personas" replace />} />
           <Route path="personas" element={<PersonasTab />} />

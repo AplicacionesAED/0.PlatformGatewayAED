@@ -6,6 +6,7 @@ import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../components/ui.jsx';
 import { ACCIONES, describir } from './auditoriaTexto.js';
 import { fijarMiembros, useDatos } from './datos.jsx';
+import { Avatar, IconoApp, colorApp, colorDe, tonoAccion } from './colores.jsx';
 import { formatoFecha } from './useCarga.js';
 import s from './Admin.module.css';
 
@@ -93,7 +94,7 @@ function Actividad({ persona, version }) {
       ) : (
         <ol className={s.actividad}>
           {estado.filas.map((f) => (
-            <li key={f.id}>
+            <li key={f.id} className={s[`tono_${tonoAccion(f.accion)}`]}>
               <span className={s.actividadFecha}>{formatoFecha(f.creado_en)}</span>
               <span>
                 <strong>{ACCIONES[f.accion] ?? f.accion}</strong>
@@ -191,10 +192,13 @@ export default function FichaPersona({ id, onCerrar }) {
       <Modal abierto={abierto} onCerrar={onCerrar} titulo={p?.nombre ?? ''} ancho={560} lateral>
         {p && (
           <>
-            <div className={s.fichaCabecera}>
-              <span className={s.sub}>{p.email}</span>
-              <InsigniasPersona p={p} />
-              <span className={s.sub}>Último ingreso: {formatoFecha(p.ultimoLogin) ?? 'nunca'}</span>
+            <div className={s.fichaHero} style={{ '--c': colorDe(p.id) }}>
+              <Avatar nombre={p.nombre} id={p.id} grande />
+              <div className={s.fichaHeroTexto}>
+                <span className={s.fichaHeroEmail}>{p.email}</span>
+                <InsigniasPersona p={p} />
+                <span className={s.fichaHeroDato}>Último ingreso: {formatoFecha(p.ultimoLogin) ?? 'nunca'}</span>
+              </div>
             </div>
 
             <div className={s.fichaAcciones}>
@@ -233,9 +237,10 @@ export default function FichaPersona({ id, onCerrar }) {
                 {(ix.datos?.apps ?? []).map((a) => {
                   const o = origenes.get(a.id);
                   return (
-                    <li key={a.id}>
+                    <li key={a.id} className={o ? s.appConAcceso : undefined} style={{ '--c': colorApp(a) }}>
                       <label className={s.casilla}>
                         <input type="checkbox" checked={Boolean(o?.accesoId)} disabled={pendientes.has(a.id)} onChange={() => alternarApp(a, o?.accesoId)} />
+                        <IconoApp app={a} tam={16} />
                         <span>
                           {a.nombre}
                           {!a.activa && <span className={s.sub}>Aplicación inactiva</span>}
@@ -261,7 +266,10 @@ export default function FichaPersona({ id, onCerrar }) {
                   {p.equipos.map((e) => (
                     <li key={e.id}>
                       <span>
-                        <Users size={15} aria-hidden="true" /> {e.nombre}
+                        <span className={s.iconoApp} style={{ '--c': colorDe(e.id) }} aria-hidden="true">
+                          <Users size={15} />
+                        </span>{' '}
+                        {e.nombre}
                       </span>
                       <BotonIcono icono={X} etiqueta={`Sacar a ${p.nombre} de ${e.nombre}`} onClick={() => quitarDeEquipo(e)} />
                     </li>

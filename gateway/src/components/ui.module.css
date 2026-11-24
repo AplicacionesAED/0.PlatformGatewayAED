@@ -290,6 +290,28 @@
   border-radius: 0;
 }
 
+/* Cabecera del panel en Azul Profundo con la linea de Gradacion aed debajo. */
+.lateral .modalCabecera {
+  border-bottom: 0;
+  background:
+    linear-gradient(var(--color-brand-deep), var(--color-brand-deep)) top / 100% calc(100% - 3px) no-repeat,
+    var(--gradient-aed);
+  color: #fff;
+}
+
+.lateral .modalCabecera .iconBtn {
+  color: color-mix(in srgb, #fff 80%, transparent);
+}
+
+.lateral .modalCabecera .iconBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
+.lateral .modalContenido {
+  background: var(--color-surface);
+}
+
 .modalCuerpo {
   display: flex;
   flex-direction: column;

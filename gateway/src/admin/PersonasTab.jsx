@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, Button, Campo, Cargando, Insignia, Modal } from '../components/ui.jsx';
 import { coincide, fijarMiembros, normalizar, useAbrirPersona, useDatos } from './datos.jsx';
 import { InsigniasPersona, ModalTemporal } from './FichaPersona.jsx';
+import { Avatar, InsigniaApp } from './colores.jsx';
 import { formatoFecha } from './useCarga.js';
 import s from './Admin.module.css';
 
@@ -284,10 +285,15 @@ export default function PersonasTab() {
                     <input type="checkbox" checked={seleccion.has(p.id)} onChange={() => alternar(p.id)} aria-label={`Seleccionar a ${p.nombre}`} />
                   </td>
                   <td>
-                    <button type="button" className={s.nombreBoton} onClick={(e) => { e.stopPropagation(); abrirPersona(p.id); }}>
-                      {p.nombre}
-                    </button>
-                    <span className={s.sub}>{p.email}</span>
+                    <div className={s.personaCelda}>
+                      <Avatar nombre={p.nombre} id={p.id} />
+                      <span>
+                        <button type="button" className={s.nombreBoton} onClick={(e) => { e.stopPropagation(); abrirPersona(p.id); }}>
+                          {p.nombre}
+                        </button>
+                        <span className={s.sub}>{p.email}</span>
+                      </span>
+                    </div>
                   </td>
                   <td>
                     <InsigniasPersona p={p} />
@@ -296,7 +302,7 @@ export default function PersonasTab() {
                     {apps.length ? (
                       <div className={s.insignias}>
                         {apps.slice(0, 3).map((a) => (
-                          <Insignia key={a.id}>{a.nombre}</Insignia>
+                          <InsigniaApp key={a.id} app={a} />
                         ))}
                         {apps.length > 3 && <Insignia>+{apps.length - 3}</Insignia>}
                       </div>

@@ -1,11 +1,28 @@
-/* Administracion del portal: barra azul marino (igual que las apps), pestañas, tablas, tarjetas y fichas laterales. */
+/* Administracion del portal: cabecera en Azul Profundo con indicadores y pestañas, tablas, tarjetas con el color de cada
+   app o equipo, y fichas laterales. */
 
-.barra {
-  background: var(--color-brand-deep);
+/* ---------- Cabecera: barra + hero en Azul Profundo, con brillos de la paleta aed ---------- */
+
+.cabecera {
+  position: relative;
   color: #fff;
+  background:
+    radial-gradient(circle at 88% -10%, rgba(32, 167, 161, 0.38), transparent 42%),
+    radial-gradient(circle at 8% 130%, rgba(35, 43, 237, 0.5), transparent 48%),
+    var(--color-brand-deep);
+}
+
+/* Linea de Gradacion aed al pie de la cabecera. */
+.cabecera::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: var(--gradient-aed);
 }
 
 .barraInterna,
+.hero,
 .main {
   width: 100%;
   max-width: 1240px;
@@ -56,30 +73,69 @@
   text-decoration: underline;
 }
 
-.main {
-  flex: 1;
-  padding-block: var(--space-xl) 72px;
+.hero {
   display: flex;
   flex-direction: column;
   gap: var(--space-lg);
+  padding-top: var(--space-lg);
 }
 
 .titulo {
   font-size: var(--text-display-size);
   font-weight: 700;
   letter-spacing: -0.02em;
+  color: #fff;
 }
 
 .lead {
   margin-top: 4px;
-  color: var(--color-ink-muted);
+  color: color-mix(in srgb, #fff 72%, transparent);
   max-width: 70ch;
+}
+
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-md);
+  min-height: 86px;
+  margin: 0;
+}
+
+.indicador {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-left: 4px solid var(--c);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.indicador dt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--text-data-size);
+  font-weight: 600;
+  color: color-mix(in srgb, #fff 78%, transparent);
+}
+
+.indicador dt svg {
+  color: var(--c);
+}
+
+.indicador dd {
+  margin: 0;
+  font-size: 1.875rem;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .tabs {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid var(--color-border-strong);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -87,22 +143,36 @@
 .tab {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
-  padding: 0 16px;
-  margin-bottom: -1px;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
   border-bottom: 3px solid transparent;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
   font-weight: 600;
-  color: var(--color-ink-muted);
+  color: color-mix(in srgb, #fff 70%, transparent);
   white-space: nowrap;
+  transition:
+    background var(--duration-fast) var(--ease-standard),
+    color var(--duration-fast) var(--ease-standard);
 }
 
 .tab:hover {
-  color: var(--color-primary);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .tabOn {
-  border-bottom-color: var(--color-primary);
-  color: var(--color-primary);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.14);
+  border-bottom-color: var(--color-gradient-end);
+}
+
+.main {
+  flex: 1;
+  padding-block: var(--space-xl) 72px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
 }
 
 section[aria-label] {
@@ -184,7 +254,8 @@ section[aria-label] {
   overflow-x: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--color-surface);
+  box-shadow: 0 10px 30px -18px rgba(11, 45, 77, 0.35);
 }
 
 .tabla {
@@ -204,19 +275,23 @@ section[aria-label] {
 .tabla thead th {
   position: sticky;
   top: 0;
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-brand-deep) 10%, white);
   font-size: var(--text-label-size);
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: var(--color-ink-muted);
+  color: var(--color-ink-secondary);
 }
 
 .tabla tbody tr:last-child > * {
   border-bottom: 0;
 }
 
+.tabla tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--color-primary) 5%, white);
+}
+
 .tabla tbody tr:hover:not(.grupo) {
-  background: var(--color-surface);
+  background: var(--color-surface-hover);
 }
 
 .inactiva {
@@ -265,9 +340,9 @@ section[aria-label] {
   gap: 8px;
   min-height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid transparent;
   border-radius: var(--radius-full);
-  background: #fff;
+  background: var(--color-surface-sunken);
   color: var(--color-ink-secondary);
   font-size: var(--text-data-size);
   font-weight: 600;
@@ -280,9 +355,9 @@ section[aria-label] {
 }
 
 .chip[aria-pressed='true'] {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
-  color: var(--color-primary-ink-on);
+  border-color: var(--color-brand-deep);
+  background: var(--color-brand-deep);
+  color: #fff;
 }
 
 .chipTotal {
@@ -299,15 +374,14 @@ section[aria-label] {
   flex-wrap: wrap;
   gap: var(--space-sm);
   padding: 10px 14px;
-  border: 1px solid var(--color-primary);
   border-radius: var(--radius-md);
-  background: var(--color-info-surface);
+  background: var(--color-brand-deep);
+  color: #fff;
   box-shadow: var(--shadow-floating);
 }
 
 .barraLote strong {
   margin-right: auto;
-  color: var(--color-info-ink);
 }
 
 .celdaMarca {
@@ -374,7 +448,7 @@ section[aria-label] {
   padding: var(--space-md) var(--space-lg) var(--space-lg);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  background: #fff;
+  background: var(--color-surface);
   color: var(--color-ink);
   text-align: left;
 }
@@ -480,14 +554,14 @@ section[aria-label] {
   min-width: 0;
 }
 
-.listaFilas li > span:has(> svg) {
+.listaFilas li > span:has(> .iconoApp) {
   flex-direction: row;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
-.listaFilas li > span:has(> svg) .sub {
+.listaFilas li > span:has(> .iconoApp) .sub {
   display: inline;
 }
 
@@ -519,8 +593,10 @@ section[aria-label] {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding-left: 12px;
-  border-left: 2px solid var(--color-border-strong);
+  padding: 6px 0 6px 12px;
+  border-left: 3px solid var(--t, var(--color-border-strong));
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--t, transparent) 9%, transparent), transparent 70%);
 }
 
 .actividadFecha {
@@ -660,8 +736,24 @@ section[aria-label] {
   white-space: nowrap;
 }
 
+@media (max-width: 640px) {
+  .indicadores {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-sm);
+  }
+
+  .indicador {
+    padding: 10px 12px;
+  }
+
+  .indicador dd {
+    font-size: 1.5rem;
+  }
+}
+
 @media (max-width: 480px) {
   .barraInterna,
+  .hero,
   .main {
     padding-inline: 16px;
   }
@@ -675,4 +767,250 @@ section[aria-label] {
     width: 20px;
     height: 20px;
   }
+}
+
+/* ---------- Identidad de color: avatares, apps y tonos de accion ---------- */
+
+.avatar {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--c);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.avatarGrande {
+  width: 58px;
+  height: 58px;
+  font-size: 1.125rem;
+  box-shadow: 0 0 0 3px #fff;
+}
+
+.personaCelda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.personaCelda > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.iconoApp {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--c);
+  color: #fff;
+}
+
+.listaApps .iconoApp,
+.listaFilas .iconoApp {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+}
+
+.insigniaApp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px 3px 8px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--c) 14%, white);
+  color: color-mix(in srgb, var(--c) 72%, black);
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.insigniaApp::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--c);
+}
+
+.appConAcceso {
+  background: color-mix(in srgb, var(--c) 9%, white);
+}
+
+.tono_ok {
+  --t: #1a8a4a;
+}
+
+.tono_error {
+  --t: var(--color-danger-ink);
+}
+
+.tono_info {
+  --t: var(--color-primary);
+}
+
+.tono_equipo {
+  --t: #0f8f8a;
+}
+
+.tono_acceso {
+  --t: #7a3fb0;
+}
+
+.tono_neutro {
+  --t: var(--color-ink-muted);
+}
+
+.accion {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--t) 13%, white);
+  color: color-mix(in srgb, var(--t) 85%, black);
+  font-size: var(--text-label-size);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- Tarjetas con color propio ---------- */
+
+.tarjetaColor {
+  border: 1px solid color-mix(in srgb, var(--c) 24%, white);
+  border-top: 4px solid var(--c);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--c) 13%, white), color-mix(in srgb, var(--c) 4%, white) 70%);
+}
+
+.tarjetaColor.tarjetaBoton {
+  transition:
+    transform var(--duration-standard) var(--ease-standard),
+    box-shadow var(--duration-standard) var(--ease-standard),
+    border-color var(--duration-standard) var(--ease-standard);
+}
+
+.tarjetaColor.tarjetaBoton:hover,
+.tarjetaColor.tarjetaBoton:focus-visible {
+  transform: translateY(-4px);
+  border-color: color-mix(in srgb, var(--c) 45%, white);
+  box-shadow: 0 18px 36px -14px color-mix(in srgb, var(--c) 60%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tarjetaColor.tarjetaBoton:hover,
+  .tarjetaColor.tarjetaBoton:focus-visible {
+    transform: none;
+  }
+}
+
+.tarjetaColor .cifra {
+  color: color-mix(in srgb, var(--c) 78%, black);
+}
+
+.tarjetaColor .iconoApp {
+  box-shadow: 0 6px 14px -6px var(--c);
+}
+
+.tarjetaNombre {
+  flex: 1;
+  min-width: 0;
+}
+
+.cifraFila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.pilaAvatares {
+  display: flex;
+  padding-left: 8px;
+}
+
+.pilaAvatares > * {
+  width: 30px;
+  height: 30px;
+  margin-left: -8px;
+  box-shadow: 0 0 0 2px #fff;
+  font-size: 0.6875rem;
+}
+
+.avatarMas {
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-brand-deep);
+  color: #fff;
+  font-weight: 700;
+}
+
+.proporcion {
+  display: block;
+  width: 100%;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--c) 18%, white);
+  overflow: hidden;
+}
+
+.proporcion > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--c);
+  transition: width var(--duration-standard) var(--ease-standard);
+}
+
+/* ---------- Encabezado de las fichas ---------- */
+
+.fichaHero {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  border-left: 5px solid var(--c);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--c) 16%, white), color-mix(in srgb, var(--c) 5%, white));
+}
+
+.fichaHero > .iconoApp {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-lg);
+}
+
+.fichaHeroTexto {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fichaHeroEmail {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.fichaHeroDato {
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+}
+
+.fichaHeroCifra {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  color: color-mix(in srgb, var(--c) 78%, black);
+  font-variant-numeric: tabular-nums;
 }

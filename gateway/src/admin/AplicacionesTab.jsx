@@ -4,6 +4,7 @@ import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
 import { useAbrirPersona, useDatos } from './datos.jsx';
+import { Avatar, IconoApp, colorApp, colorDe } from './colores.jsx';
 import s from './Admin.module.css';
 
 // Quien entra a una app: equipos con acceso, personas con acceso directo y el total que resulta.
@@ -31,12 +32,14 @@ function FichaApp({ app, onCerrar }) {
 
   return (
     <Modal abierto onCerrar={onCerrar} titulo={app.nombre} ancho={560} lateral>
-      <div className={s.fichaCabecera}>
-        {!app.activa && <Aviso tipo="info">La aplicación está inactiva: nadie entra, aunque tenga acceso asignado.</Aviso>}
-        <p>
-          <strong>{total}</strong> {total === 1 ? 'persona activa entra' : 'personas activas entran'} a esta aplicación.
-        </p>
+      <div className={s.fichaHero} style={{ '--c': colorApp(app) }}>
+        <IconoApp app={app} tam={26} />
+        <div className={s.fichaHeroTexto}>
+          <span className={s.fichaHeroCifra}>{total}</span>
+          <span className={s.fichaHeroDato}>{total === 1 ? 'persona activa entra' : 'personas activas entran'} a esta aplicación</span>
+        </div>
       </div>
+      {!app.activa && <Aviso tipo="info">La aplicación está inactiva: nadie entra, aunque tenga acceso asignado.</Aviso>}
       {error && <Aviso>{error}</Aviso>}
 
       <section className={s.fichaSeccion} aria-labelledby="app-equipos">
@@ -48,7 +51,10 @@ function FichaApp({ app, onCerrar }) {
             {equipos.map((e) => (
               <li key={e.id}>
                 <span>
-                  <Users size={15} aria-hidden="true" /> {e.nombre} <span className={s.sub}>{e.miembros.length} {e.miembros.length === 1 ? 'miembro' : 'miembros'}</span>
+                  <span className={s.iconoApp} style={{ '--c': colorDe(e.id) }} aria-hidden="true">
+                    <Users size={15} />
+                  </span>{' '}
+                  {e.nombre} <span className={s.sub}>{e.miembros.length} {e.miembros.length === 1 ? 'miembro' : 'miembros'}</span>
                 </span>
                 <BotonIcono icono={X} etiqueta={`Quitar ${app.nombre} al equipo ${e.nombre}`} onClick={() => tras(api.delete(`/accesos/${ix.deEquipo.get(e.id).get(app.id)}`))} />
               </li>
@@ -94,10 +100,13 @@ function FichaApp({ app, onCerrar }) {
           <ul className={s.listaFilas}>
             {directas.map((u) => (
               <li key={u.id} className={u.activo ? undefined : s.inactiva}>
-                <span>
-                  <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(u.id)}>{u.nombre}</button>
-                  <span className={s.sub}>{u.email}{u.activo ? '' : ' · inactiva'}</span>
-                </span>
+                <div className={s.personaCelda}>
+                  <Avatar nombre={u.nombre} id={u.id} />
+                  <span>
+                    <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(u.id)}>{u.nombre}</button>
+                    <span className={s.sub}>{u.email}{u.activo ? '' : ' · inactiva'}</span>
+                  </span>
+                </div>
                 <BotonIcono icono={X} etiqueta={`Quitar ${app.nombre} a ${u.nombre}`} onClick={() => tras(api.delete(`/accesos/${ix.directos.get(u.id).get(app.id)}`))} />
               </li>
             ))}
@@ -124,6 +133,7 @@ export default function AplicacionesTab() {
 
   if (ix.cargando && !ix.datos) return <Cargando />;
   const app = abierta != null ? ix.appPorId.get(abierta) : null;
+  const activas = ix.datos.usuarios.filter((u) => u.activo).length;
 
   return (
     <section aria-label="Aplicaciones">
@@ -131,21 +141,28 @@ export default function AplicacionesTab() {
       {ix.error && <Aviso>{ix.error}</Aviso>}
 
       <div className={s.tarjetas}>
-        {resumen.map(({ app: a, personas, equipos, directas }) => (
-          <button key={a.id} type="button" className={`${s.tarjeta} ${s.tarjetaBoton}`} onClick={() => setAbierta(a.id)}>
-            <span className={s.tarjetaTitulo}>
-              {a.nombre}
-              <ChevronRight size={18} aria-hidden="true" />
-            </span>
-            {!a.activa && <Insignia tono="aviso">Inactiva</Insignia>}
-            <span className={s.cifra}>
-              {personas} <span className={s.sub}>{personas === 1 ? 'persona activa' : 'personas activas'}</span>
-            </span>
-            <span className={s.sub}>
-              {equipos} {equipos === 1 ? 'equipo' : 'equipos'} · {directas} {directas === 1 ? 'acceso directo' : 'accesos directos'}
-            </span>
-          </button>
-        ))}
+        {resumen.map(({ app: a, personas, equipos, directas }) => {
+          const parte = activas ? Math.round((personas / activas) * 100) : 0;
+          return (
+            <button key={a.id} type="button" className={`${s.tarjeta} ${s.tarjetaBoton} ${s.tarjetaColor}`} style={{ '--c': colorApp(a) }} onClick={() => setAbierta(a.id)}>
+              <span className={s.tarjetaTitulo}>
+                <IconoApp app={a} tam={20} />
+                <span className={s.tarjetaNombre}>{a.nombre}</span>
+                <ChevronRight size={18} aria-hidden="true" />
+              </span>
+              {!a.activa && <Insignia tono="aviso">Inactiva</Insignia>}
+              <span className={s.cifra}>
+                {personas} <span className={s.sub}>{personas === 1 ? 'persona activa' : 'personas activas'}</span>
+              </span>
+              <span className={s.proporcion} role="img" aria-label={`${parte}% de las personas activas`}>
+                <span style={{ width: `${parte}%` }} />
+              </span>
+              <span className={s.sub}>
+                {equipos} {equipos === 1 ? 'equipo' : 'equipos'} · {directas} {directas === 1 ? 'acceso directo' : 'accesos directos'} · {parte}% del total
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {app && <FichaApp key={app.id} app={app} onCerrar={() => setAbierta(null)} />}

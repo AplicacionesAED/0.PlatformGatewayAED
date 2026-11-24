@@ -574,6 +574,16 @@ this document.
 Rules that still apply: only one gradient *line* per card (never a fill), no gradient text,
 motion under `prefers-reduced-motion` is disabled, focus-visible keeps the 2px Azul Vibrante ring.
 
+**Portal administration (`/admin`) — color identity exception** (2026-11-24, explicit user request:
+"se ve muy básico con las tarjetas blancas… dejemos de usar tantos blancos"). The admin screens of
+the portal use color by identity instead of flat white surfaces: an Azul Profundo header with soft
+radial glows of the aed palette, a Gradación aed line under it and translucent KPI tiles; each app
+keeps its `acento` and icon from `gateway/src/apps.js`, each team and person gets a fixed color
+from the brand palette by id (`gateway/src/admin/colores.jsx`), and cards/side panels use a soft
+tint of that color (a subtle same-hue gradient, not the aed gradient as a fill). Azul Vibrante stays
+reserved for actions. This exception covers only `/admin`; working screens of the other apps keep
+the flat Surface rules.
+
 ### Info Tooltip
 - **What it's for:** a KPI, chart, or any other compact/abstracted piece of data whose meaning
   isn't self-evident from its label alone (how it's calculated, what's included/excluded,

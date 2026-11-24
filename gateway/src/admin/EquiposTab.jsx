@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ChevronRight, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { ChevronRight, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
 import { api } from '../api/client.js';
-import { Aviso, BotonIcono, Button, Campo, Cargando, Insignia, Modal } from '../components/ui.jsx';
+import { Aviso, BotonIcono, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
 import { fijarMiembros, useAbrirPersona, useDatos } from './datos.jsx';
+import { Avatar, IconoApp, InsigniaApp, colorApp, colorDe } from './colores.jsx';
 import s from './Admin.module.css';
 
 function ModalEquipo({ equipo, abierto, onCerrar, onGuardado }) {
@@ -84,8 +85,14 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
 
   return (
     <Modal abierto onCerrar={onCerrar} titulo={equipo.nombre} ancho={560} lateral>
-      <div className={s.fichaCabecera}>
-        {equipo.descripcion && <p className={s.sub}>{equipo.descripcion}</p>}
+      <div className={s.fichaHero} style={{ '--c': colorDe(equipo.id) }}>
+        <span className={s.iconoApp} aria-hidden="true">
+          <Users size={26} />
+        </span>
+        <div className={s.fichaHeroTexto}>
+          <span className={s.fichaHeroCifra}>{equipo.miembros.length}</span>
+          <span className={s.fichaHeroDato}>{equipo.miembros.length === 1 ? 'miembro' : 'miembros'}{equipo.descripcion ? ` · ${equipo.descripcion}` : ''}</span>
+        </div>
       </div>
       <div className={s.fichaAcciones}>
         <Button variante="secundario" icono={Pencil} onClick={onEditar}>Editar</Button>
@@ -98,9 +105,10 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
         <p className={s.sub}>Todos los miembros entran a las aplicaciones marcadas.</p>
         <ul className={s.listaApps}>
           {(ix.datos?.apps ?? []).map((a) => (
-            <li key={a.id}>
+            <li key={a.id} className={ix.deEquipo.get(equipo.id)?.has(a.id) ? s.appConAcceso : undefined} style={{ '--c': colorApp(a) }}>
               <label className={s.casilla}>
                 <input type="checkbox" checked={Boolean(ix.deEquipo.get(equipo.id)?.has(a.id))} disabled={pendientes.has(a.id)} onChange={() => alternarApp(a)} />
+                <IconoApp app={a} tam={16} />
                 <span>
                   {a.nombre}
                   {!a.activa && <span className={s.sub}>Aplicación inactiva</span>}
@@ -128,10 +136,13 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
               const u = ix.personaPorId.get(m.id);
               return (
                 <li key={m.id} className={u?.activo === false ? s.inactiva : undefined}>
-                  <span>
-                    <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(m.id)}>{m.nombre}</button>
-                    <span className={s.sub}>{m.email}{u?.activo === false ? ' · inactiva' : ''}</span>
-                  </span>
+                  <div className={s.personaCelda}>
+                    <Avatar nombre={m.nombre} id={m.id} />
+                    <span>
+                      <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(m.id)}>{m.nombre}</button>
+                      <span className={s.sub}>{m.email}{u?.activo === false ? ' · inactiva' : ''}</span>
+                    </span>
+                  </div>
                   <BotonIcono icono={X} etiqueta={`Sacar a ${m.nombre} de ${equipo.nombre}`} onClick={() => tras(fijarMiembros(equipo, ids.filter((id) => id !== m.id)))} />
                 </li>
               );
@@ -185,17 +196,28 @@ export default function EquiposTab() {
         {equipos.map((e) => {
           const apps = [...(ix.deEquipo.get(e.id)?.keys() ?? [])].map((id) => ix.appPorId.get(id)).filter(Boolean);
           return (
-            <button key={e.id} type="button" className={`${s.tarjeta} ${s.tarjetaBoton}`} onClick={() => setAbierto(e.id)}>
+            <button key={e.id} type="button" className={`${s.tarjeta} ${s.tarjetaBoton} ${s.tarjetaColor}`} style={{ '--c': colorDe(e.id) }} onClick={() => setAbierto(e.id)}>
               <span className={s.tarjetaTitulo}>
-                {e.nombre}
+                <span className={s.iconoApp} aria-hidden="true">
+                  <Users size={20} />
+                </span>
+                <span className={s.tarjetaNombre}>{e.nombre}</span>
                 <ChevronRight size={18} aria-hidden="true" />
               </span>
               {e.descripcion && <span className={s.sub}>{e.descripcion}</span>}
-              <span className={s.cifra}>
-                {e.miembros.length} <span className={s.sub}>{e.miembros.length === 1 ? 'miembro' : 'miembros'}</span>
+              <span className={s.cifraFila}>
+                <span className={s.cifra}>
+                  {e.miembros.length} <span className={s.sub}>{e.miembros.length === 1 ? 'miembro' : 'miembros'}</span>
+                </span>
+                <span className={s.pilaAvatares} aria-hidden="true">
+                  {e.miembros.slice(0, 5).map((m) => (
+                    <Avatar key={m.id} nombre={m.nombre} id={m.id} />
+                  ))}
+                  {e.miembros.length > 5 && <span className={s.avatarMas}>+{e.miembros.length - 5}</span>}
+                </span>
               </span>
               <span className={s.insignias}>
-                {apps.length ? apps.map((a) => <Insignia key={a.id}>{a.nombre}</Insignia>) : <span className={s.sub}>Sin aplicaciones</span>}
+                {apps.length ? apps.map((a) => <InsigniaApp key={a.id} app={a} />) : <span className={s.sub}>Sin aplicaciones</span>}
               </span>
             </button>
           );

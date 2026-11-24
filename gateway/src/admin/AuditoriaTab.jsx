@@ -6,6 +6,7 @@ import { Aviso, BotonIcono, Button, Cargando } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
 import { ACCIONES, describir } from './auditoriaTexto.js';
 import { useAbrirPersona, useDatos } from './datos.jsx';
+import { Avatar, tonoAccion } from './colores.jsx';
 import { formatoFecha } from './useCarga.js';
 import s from './Admin.module.css';
 
@@ -121,15 +122,20 @@ export default function AuditoriaTab() {
                   <td className={s.nowrap}>{formatoFecha(f.creado_en)}</td>
                   <td>
                     {f.actor ? (
-                      <>
-                        <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(f.actor_id)}>{f.actor.nombre}</button>
-                        <span className={s.sub}>{f.actor.email}</span>
-                      </>
+                      <div className={s.personaCelda}>
+                        <Avatar nombre={f.actor.nombre} id={f.actor_id} />
+                        <span>
+                          <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(f.actor_id)}>{f.actor.nombre}</button>
+                          <span className={s.sub}>{f.actor.email}</span>
+                        </span>
+                      </div>
                     ) : (
                       <span className={s.sub}>—</span>
                     )}
                   </td>
-                  <td>{ACCIONES[f.accion] ?? f.accion}</td>
+                  <td>
+                    <span className={`${s.accion} ${s[`tono_${tonoAccion(f.accion)}`]}`}>{ACCIONES[f.accion] ?? f.accion}</span>
+                  </td>
                   <td className={s.detalle}>
                     {describir(f, ix)}
                     {f.ip ? <span className={s.sub}>IP {f.ip}</span> : null}
