@@ -779,11 +779,13 @@ section[aria-label] {
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--c);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  overflow: hidden;
+}
+
+.avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .avatarGrande {

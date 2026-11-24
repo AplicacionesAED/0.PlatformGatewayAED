@@ -135,7 +135,7 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
               return (
                 <li key={m.id} className={u?.activo === false ? s.inactiva : undefined}>
                   <div className={s.personaCelda}>
-                    <Avatar nombre={m.nombre} id={m.id} />
+                    <Avatar nombre={m.nombre} />
                     <span>
                       <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(m.id)}>{m.nombre}</button>
                       <span className={s.sub}>{m.email}{u?.activo === false ? ' · inactiva' : ''}</span>
@@ -207,7 +207,7 @@ export default function EquiposTab() {
                 </span>
                 <span className={s.pilaAvatares} aria-hidden="true">
                   {e.miembros.slice(0, 4).map((m) => (
-                    <Avatar key={m.id} nombre={m.nombre} id={m.id} />
+                    <Avatar key={m.id} nombre={m.nombre} />
                   ))}
                   {e.miembros.length > 4 && <span className={s.avatarMas}>+{e.miembros.length - 4}</span>}
                 </span>

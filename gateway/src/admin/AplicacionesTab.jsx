@@ -99,7 +99,7 @@ function FichaApp({ app, onCerrar }) {
             {directas.map((u) => (
               <li key={u.id} className={u.activo ? undefined : s.inactiva}>
                 <div className={s.personaCelda}>
-                  <Avatar nombre={u.nombre} id={u.id} />
+                  <Avatar nombre={u.nombre} />
                   <span>
                     <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(u.id)}>{u.nombre}</button>
                     <span className={s.sub}>{u.email}{u.activo ? '' : ' · inactiva'}</span>

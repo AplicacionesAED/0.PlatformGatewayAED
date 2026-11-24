@@ -306,7 +306,7 @@ export default function PersonasTab() {
                   </td>
                   <td>
                     <div className={s.personaCelda}>
-                      <Avatar nombre={p.nombre} id={p.id} />
+                      <Avatar nombre={p.nombre} />
                       <span>
                         <button type="button" className={s.nombreBoton} onClick={(e) => { e.stopPropagation(); abrirPersona(p.id); }}>
                           {p.nombre}

@@ -123,7 +123,7 @@ export default function AuditoriaTab() {
                   <td>
                     {f.actor ? (
                       <div className={s.personaCelda}>
-                        <Avatar nombre={f.actor.nombre} id={f.actor_id} />
+                        <Avatar nombre={f.actor.nombre} />
                         <span>
                           <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(f.actor_id)}>{f.actor.nombre}</button>
                           <span className={s.sub}>{f.actor.email}</span>

@@ -6,7 +6,7 @@ import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../components/ui.jsx';
 import { ACCIONES, describir } from './auditoriaTexto.js';
 import { fijarMiembros, useDatos } from './datos.jsx';
-import { Avatar, IconoApp, IconoEquipo, colorApp, colorDe, tonoAccion } from './colores.jsx';
+import { Avatar, IconoApp, IconoEquipo, colorApp, tonoAccion } from './colores.jsx';
 import { formatoFecha } from './useCarga.js';
 import s from './Admin.module.css';
 
@@ -192,8 +192,8 @@ export default function FichaPersona({ id, onCerrar }) {
       <Modal abierto={abierto} onCerrar={onCerrar} titulo={p?.nombre ?? ''} ancho={560} lateral>
         {p && (
           <>
-            <div className={s.fichaHero} style={{ '--c': colorDe(p.id) }}>
-              <Avatar nombre={p.nombre} id={p.id} grande />
+            <div className={s.fichaHero} style={{ '--c': '#20a7a1' }}>
+              <Avatar nombre={p.nombre} grande />
               <div className={s.fichaHeroTexto}>
                 <span className={s.fichaHeroEmail}>{p.email}</span>
                 <InsigniasPersona p={p} />
