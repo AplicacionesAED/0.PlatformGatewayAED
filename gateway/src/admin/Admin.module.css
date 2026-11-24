@@ -1217,3 +1217,31 @@ section[aria-label] {
   background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%232a425c' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 14px center;
   cursor: pointer;
 }
+
+/* ---------- Personas: filtro por aplicacion y paginacion ---------- */
+
+.filtroApp select {
+  min-width: 230px;
+}
+
+.paginacionPie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  font-size: var(--text-data-size);
+  color: var(--color-ink-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.paginas {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+.paginaTexto {
+  min-width: 110px;
+  text-align: center;
+}

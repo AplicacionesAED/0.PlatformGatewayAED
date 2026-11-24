@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, KeyRound, Power, Search, ShieldCheck, UserPlus, Users, AppWindow, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, KeyRound, Power, Search, ShieldCheck, UserPlus, Users, AppWindow, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
@@ -79,6 +79,8 @@ function ModalNueva({ abierto, onCerrar, onCreada }) {
     </Modal>
   );
 }
+
+const POR_PAGINA = 50;
 
 const LOTE = {
   equipo: { titulo: 'Agregar a un equipo', boton: 'Agregar' },
@@ -198,6 +200,8 @@ export default function PersonasTab() {
   const [temporal, setTemporal] = useState(null);
   const [lote, setLote] = useState(null);
   const [avisoLote, setAvisoLote] = useState(null);
+  const [appFiltro, setAppFiltro] = useState('');
+  const [pagina, setPagina] = useState(1);
 
   const personas = ix.datos?.usuarios ?? [];
 
@@ -218,12 +222,23 @@ export default function PersonasTab() {
   const filas = useMemo(() => {
     const q = normalizar(busqueda.trim());
     const fn = filtros.find((f) => f.clave === filtro)?.fn ?? (() => true);
-    return personas.filter((u) => fn(u) && coincide(q, u.nombre, u.email));
-  }, [personas, busqueda, filtro, filtros]);
+    // Filtro por aplicacion: quien la tiene asignada por cualquier camino (directo o equipo).
+    const conApp = appFiltro ? (u) => ix.origenes(u).has(Number(appFiltro)) : () => true;
+    return personas.filter((u) => fn(u) && conApp(u) && coincide(q, u.nombre, u.email));
+  }, [personas, busqueda, filtro, filtros, appFiltro, ix]);
 
   if (ix.cargando && !ix.datos) return <Cargando />;
 
-  const todasMarcadas = filas.length > 0 && filas.every((p) => seleccion.has(p.id));
+  // Paginacion en el navegador: los datos ya estan cargados (las fichas y los filtros los necesitan todos); lo costoso era
+  // dibujar cientos de filas con avatar a la vez.
+  const totalPaginas = Math.max(1, Math.ceil(filas.length / POR_PAGINA));
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const visibles = filas.slice((paginaActual - 1) * POR_PAGINA, paginaActual * POR_PAGINA);
+  const desde = filas.length ? (paginaActual - 1) * POR_PAGINA + 1 : 0;
+  const hasta = (paginaActual - 1) * POR_PAGINA + visibles.length;
+
+  const todasMarcadas = visibles.length > 0 && visibles.every((p) => seleccion.has(p.id));
+  const todoElFiltroMarcado = filas.length > 0 && filas.every((p) => seleccion.has(p.id));
   const alternar = (id) =>
     setSeleccion((actual) => {
       const n = new Set(actual);
@@ -234,12 +249,22 @@ export default function PersonasTab() {
   const alternarTodas = () =>
     setSeleccion((actual) => {
       const n = new Set(actual);
-      for (const p of filas) {
+      for (const p of visibles) {
         if (todasMarcadas) n.delete(p.id);
         else n.add(p.id);
       }
       return n;
     });
+  const marcarTodoElFiltro = () =>
+    setSeleccion((actual) => {
+      const n = new Set(actual);
+      for (const p of filas) n.add(p.id);
+      return n;
+    });
+  const cambiarFiltro = (setter) => (valor) => {
+    setter(valor);
+    setPagina(1);
+  };
   const seleccionadas = personas.filter((p) => seleccion.has(p.id));
 
   return (
@@ -247,14 +272,23 @@ export default function PersonasTab() {
       <div className={s.barraHerramientas}>
         <label className={s.buscador}>
           <Search size={18} aria-hidden="true" />
-          <input type="search" placeholder="Buscar por nombre o correo…" value={busqueda} onChange={(e) => setBusqueda(e.target.value)} aria-label="Buscar persona" />
+          <input type="search" placeholder="Buscar por nombre o correo…" value={busqueda} onChange={(e) => cambiarFiltro(setBusqueda)(e.target.value)} aria-label="Buscar persona" />
+        </label>
+        <label className={`${s.filtro} ${s.filtroApp}`}>
+          <span className={s.soloLectores}>Aplicación</span>
+          <select value={appFiltro} onChange={(e) => cambiarFiltro(setAppFiltro)(e.target.value)} aria-label="Filtrar por aplicación">
+            <option value="">Todas las aplicaciones</option>
+            {ix.datos.apps.map((a) => (
+              <option key={a.id} value={a.id}>{a.nombre}</option>
+            ))}
+          </select>
         </label>
         <Button icono={UserPlus} onClick={() => setNueva(true)}>Nueva persona</Button>
       </div>
 
       <div className={s.chips} role="group" aria-label="Filtrar personas">
         {filtros.map((f) => (
-          <button key={f.clave} type="button" className={s.chip} aria-pressed={filtro === f.clave} onClick={() => setFiltro(f.clave)}>
+          <button key={f.clave} type="button" className={s.chip} aria-pressed={filtro === f.clave} onClick={() => cambiarFiltro(setFiltro)(f.clave)}>
             {f.nombre} <span className={s.chipTotal}>{f.total}</span>
           </button>
         ))}
@@ -266,6 +300,11 @@ export default function PersonasTab() {
       {seleccion.size > 0 && (
         <div className={s.barraLote} role="region" aria-label="Acciones sobre las personas seleccionadas">
           <strong>{seleccion.size} {seleccion.size === 1 ? 'seleccionada' : 'seleccionadas'}</strong>
+          {!todoElFiltroMarcado && filas.length > visibles.length && (
+            <Button variante="secundario" onClick={marcarTodoElFiltro}>
+              Seleccionar las {filas.length} del filtro
+            </Button>
+          )}
           <Button variante="secundario" icono={Users} onClick={() => setLote('equipo')} disabled={!ix.datos.equipos.length}>
             Agregar a equipo
           </Button>
@@ -286,7 +325,7 @@ export default function PersonasTab() {
           <thead>
             <tr>
               <th scope="col" className={s.celdaMarca}>
-                <input type="checkbox" checked={todasMarcadas} onChange={alternarTodas} aria-label="Seleccionar todas las personas visibles" />
+                <input type="checkbox" checked={todasMarcadas} onChange={alternarTodas} aria-label="Seleccionar las personas de esta página" />
               </th>
               <th scope="col">Persona</th>
               <th scope="col">Estado</th>
@@ -297,7 +336,7 @@ export default function PersonasTab() {
             </tr>
           </thead>
           <tbody>
-            {filas.map((p) => {
+            {visibles.map((p) => {
               const apps = ix.appsDe(p);
               return (
                 <tr key={p.id} className={`${s.filaAbrible} ${p.activo ? '' : s.inactiva}`} onClick={() => abrirPersona(p.id)}>
@@ -348,8 +387,23 @@ export default function PersonasTab() {
             })}
           </tbody>
         </table>
-        {filas.length === 0 && <p className={s.vacio}>{busqueda || filtro !== 'todas' ? 'Ninguna persona coincide.' : 'Aún no hay personas.'}</p>}
+        {filas.length === 0 && <p className={s.vacio}>{busqueda || filtro !== 'todas' || appFiltro ? 'Ninguna persona coincide.' : 'Aún no hay personas.'}</p>}
       </div>
+
+      {filas.length > 0 && (
+        <nav className={s.paginacionPie} aria-label="Páginas de personas">
+          <span aria-live="polite">
+            {desde}–{hasta} de {filas.length}
+          </span>
+          <div className={s.paginas}>
+            <Button variante="secundario" icono={ChevronLeft} disabled={paginaActual === 1} onClick={() => setPagina(paginaActual - 1)} aria-label="Página anterior" />
+            <span className={s.paginaTexto}>
+              Página {paginaActual} de {totalPaginas}
+            </span>
+            <Button variante="secundario" icono={ChevronRight} disabled={paginaActual === totalPaginas} onClick={() => setPagina(paginaActual + 1)} aria-label="Página siguiente" />
+          </div>
+        </nav>
+      )}
 
       <ModalNueva
         abierto={nueva}
