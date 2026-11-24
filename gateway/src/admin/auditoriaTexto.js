@@ -42,9 +42,10 @@ const siNo = (v) => (v ? 'sí' : 'no');
 
 // `ix` son los indices de datos.jsx (personaPorId, equipoPorId, appPorSlug); puede faltar mientras cargan.
 export function describir(f, ix) {
-  const persona = (id) => ix?.personaPorId.get(Number(id))?.nombre ?? `persona #${id}`;
-  const equipo = (id) => ix?.equipoPorId.get(Number(id))?.nombre ?? `equipo #${id}`;
-  const app = (slug) => ix?.appPorSlug.get(slug)?.nombre ?? slug;
+  // `ix` existe desde el primer render, pero sus indices solo cuando cargaron los datos.
+  const persona = (id) => ix?.personaPorId?.get(Number(id))?.nombre ?? `persona #${id}`;
+  const equipo = (id) => ix?.equipoPorId?.get(Number(id))?.nombre ?? `equipo #${id}`;
+  const app = (slug) => ix?.appPorSlug?.get(slug)?.nombre ?? slug;
   const partes = [];
 
   // Sobre quien o que se hizo, si no es quien lo hizo.

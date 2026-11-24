@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, FileSpreadsheet, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Cargando } from '../components/ui.jsx';
-import AlertasSeguridad from './AlertasSeguridad.jsx';
+import AlertasSeguridad, { BotonAlertas } from './AlertasSeguridad.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
 import { ACCIONES, describir } from './auditoriaTexto.js';
 import { exportarAuditoria } from './exportarAuditoria.js';
@@ -27,6 +27,7 @@ export default function AuditoriaTab({ alertas }) {
   const [estado, setEstado] = useState({ filas: [], total: 0, cargando: true, error: null });
   const [exportando, setExportando] = useState(null); // null | texto de progreso
   const [errorExportar, setErrorExportar] = useState(null);
+  const [verAlertas, setVerAlertas] = useState(false);
 
   // Desde las alertas: reemplaza todos los filtros por los de la alerta.
   const filtrarAlerta = (filtros) => {
@@ -79,8 +80,6 @@ export default function AuditoriaTab({ alertas }) {
 
   return (
     <section aria-label="Auditoría">
-      <AlertasSeguridad alertas={alertas} onFiltrar={filtrarAlerta} />
-
       <div className={s.filtrosAuditoria}>
         <label className={s.filtro}>
           <span>Acción</span>
@@ -119,6 +118,7 @@ export default function AuditoriaTab({ alertas }) {
       <div className={s.barraHerramientas}>
         <p className={s.sub}>{usuario ? 'Lo que hizo la persona y lo que se hizo sobre ella (su cuenta, sus accesos y sus equipos).' : 'Cambios de administración e inicios de sesión.'}</p>
         <div className={s.paginacion}>
+          <BotonAlertas alertas={alertas} abierto={verAlertas} onClick={() => setVerAlertas((v) => !v)} />
           <Button variante="secundario" icono={FileSpreadsheet} onClick={exportar} disabled={Boolean(exportando) || estado.total === 0}>
             {exportando ?? 'Exportar a Excel'}
           </Button>
@@ -128,6 +128,7 @@ export default function AuditoriaTab({ alertas }) {
         </div>
       </div>
 
+      {verAlertas && <AlertasSeguridad alertas={alertas} onFiltrar={filtrarAlerta} />}
       {estado.error && <Aviso>{estado.error}</Aviso>}
       {errorExportar && <Aviso>{errorExportar}</Aviso>}
       {estado.cargando && estado.filas.length === 0 ? (

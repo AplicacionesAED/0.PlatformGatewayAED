@@ -1592,6 +1592,29 @@ section[aria-label] {
   text-align: center;
 }
 
+.botonAlertas {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: #fff;
+  color: var(--color-ink-muted);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botonAlertas[aria-expanded='true'] {
+  background: var(--color-surface-sunken, #f1f4f8);
+}
+
+.botonAlertasActivo {
+  border-color: color-mix(in srgb, var(--color-danger-ink) 45%, transparent);
+  color: var(--color-danger-ink);
+}
+
 .alertas {
   display: flex;
   flex-direction: column;

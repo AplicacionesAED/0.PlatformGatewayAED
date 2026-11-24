@@ -26,6 +26,22 @@ export function useAlertas() {
 // Lo que pide atencion: robos de sesion, bloqueos y correos con fallos repetidos (los fallos sueltos son normales).
 export const totalAlertas = (a) => (a ? a.sesionReuso + a.bloqueos + a.repetidos.length : 0);
 
+// Boton que abre y cierra las alertas; el numero rojo dice cuantas hay pendientes. Las alertas arrancan cerradas.
+export function BotonAlertas({ alertas, abierto, onClick }) {
+  const n = totalAlertas(alertas);
+  return (
+    <button type="button" className={`${s.botonAlertas} ${n ? s.botonAlertasActivo : ''}`} aria-expanded={abierto} onClick={onClick}>
+      <ShieldAlert size={16} aria-hidden="true" /> Alertas de seguridad
+      {n > 0 && (
+        <span className={s.tabAlerta}>
+          {n}
+          <span className={s.soloLectores}> pendientes</span>
+        </span>
+      )}
+    </button>
+  );
+}
+
 // Dia de hace N dias en hora de Colombia (AAAA-MM-DD), para el filtro "desde".
 const haceDias = (n) => new Date(Date.now() - n * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA', { timeZone: 'America/Bogota' });
 
