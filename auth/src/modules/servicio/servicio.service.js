@@ -50,7 +50,7 @@ async function registrar(app, { email, nombre }, ctx) {
   } else if (usuario.nombre !== nombre && (await gestionable(usuario, app))) {
     await usuario.update({ nombre });
   }
-  await acceso.conceder({ appId: app.id, usuarioId: usuario.id }, ctxBase(ctx));
+  await acceso.conceder({ appId: app.id, usuarioId: usuario.id, gestionadoPor: app.slug }, ctxBase(ctx));
   await registro(ctx, app, 'servicio.registrar', { email: correo, nuevo });
   return { id: usuario.id, email: usuario.email, nombre: usuario.nombre, activo: usuario.activo, nuevo };
 }

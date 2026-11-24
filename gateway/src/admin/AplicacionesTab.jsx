@@ -1,14 +1,15 @@
 import { useMemo, useState } from 'react';
-import { ChevronRight, UserPlus, Plus, X } from 'lucide-react';
+import { ChevronRight, Eraser, Plus, Trash2, UserPlus, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
 import ListaPaginada from './ListaPaginada.jsx';
-
-const textoPersona = (u) => `${u.nombre} ${u.email}`;
+import { ConfirmarQuitarApp, OfrecerLimpieza } from './Impacto.jsx';
 import { useAbrirPersona, useDatos } from './datos.jsx';
 import { Avatar, IconoApp, IconoEquipo, colorApp } from './colores.jsx';
 import s from './Admin.module.css';
+
+const textoPersona = (u) => `${u.nombre} ${u.email}`;
 
 // Quien entra a una app: equipos con acceso, personas con acceso directo y el total que resulta.
 function FichaApp({ app, onCerrar }) {
@@ -16,6 +17,9 @@ function FichaApp({ app, onCerrar }) {
   const abrirPersona = useAbrirPersona();
   const [equipoNuevo, setEquipoNuevo] = useState('');
   const [error, setError] = useState(null);
+  const [quitandoEquipo, setQuitandoEquipo] = useState(null); // equipo
+  const [limpieza, setLimpieza] = useState(null); // { lista, motivo }
+  const [quitandoGestionado, setQuitandoGestionado] = useState(null); // persona con acceso gestionado por una app
 
   async function tras(promesa) {
     setError(null);
@@ -32,6 +36,31 @@ function FichaApp({ app, onCerrar }) {
   const directas = (ix.datos?.usuarios ?? []).filter((u) => ix.directos.get(u.id)?.has(app.id));
   const conDirecta = new Set(directas.map((u) => u.id));
   const total = (ix.datos?.usuarios ?? []).filter((u) => u.activo && ix.origenes(u).has(app.id)).length;
+  const accesoDe = (u) => ix.directos.get(u.id).get(app.id);
+  const gestor = (u) => ix.gestionadoPor(accesoDe(u));
+  const nombreGestor = (slug) => ix.appPorSlug.get(slug)?.nombre ?? slug;
+  const gestionadas = directas.filter((u) => gestor(u)).length;
+  const sobran = ix.redundantes(app.id);
+  const sobranIds = new Set(sobran.map((r) => r.persona.id));
+
+  // Dar la app a un equipo; si algunos miembros ya la tenian dada a mano, se ofrece dejarla solo por el equipo.
+  async function darAEquipo(equipoId) {
+    const equipo = ix.equipoPorId.get(equipoId);
+    const lista = ix.redundantes(app.id, equipo);
+    setError(null);
+    try {
+      await api.post('/accesos', { appId: app.id, equipoId });
+      await ix.recargar();
+      if (lista.length) setLimpieza({ lista, motivo: `${equipo.nombre} ya da ${app.nombre} a ${lista.length === 1 ? 'esta persona' : 'estas personas'}.` });
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function quitarDirecto(u) {
+    if (gestor(u)) setQuitandoGestionado(u);
+    else tras(api.delete(`/accesos/${accesoDe(u)}`));
+  }
 
   return (
     <Modal abierto onCerrar={onCerrar} titulo={app.nombre} ancho={760} lateral>
@@ -44,6 +73,17 @@ function FichaApp({ app, onCerrar }) {
       </div>
       {!app.activa && <Aviso tipo="info">La aplicación está inactiva: nadie entra, aunque tenga acceso asignado.</Aviso>}
       {error && <Aviso>{error}</Aviso>}
+      {sobran.length > 0 && (
+        <div className={s.avisoAccion}>
+          <Eraser size={18} aria-hidden="true" />
+          <p>
+            <strong>{sobran.length}</strong> {sobran.length === 1 ? 'acceso directo sobra' : 'accesos directos sobran'}: esas personas también tienen {app.nombre} por un equipo.
+          </p>
+          <Button variante="secundario" onClick={() => setLimpieza({ lista: sobran, motivo: `También tienen ${app.nombre} por un equipo.` })}>
+            Revisar
+          </Button>
+        </div>
+      )}
 
       <section className={s.fichaSeccion} aria-labelledby="app-equipos">
         <h3 id="app-equipos">Equipos</h3>
@@ -57,7 +97,7 @@ function FichaApp({ app, onCerrar }) {
                   <IconoEquipo equipo={e} />
                   {e.nombre} <span className={s.sub}>{e.miembros.length} {e.miembros.length === 1 ? 'miembro' : 'miembros'}</span>
                 </span>
-                <BotonIcono icono={X} etiqueta={`Quitar ${app.nombre} al equipo ${e.nombre}`} onClick={() => tras(api.delete(`/accesos/${ix.deEquipo.get(e.id).get(app.id)}`))} />
+                <BotonIcono icono={X} etiqueta={`Quitar ${app.nombre} al equipo ${e.nombre}`} onClick={() => setQuitandoEquipo(e)} />
               </li>
             ))}
           </ul>
@@ -77,7 +117,7 @@ function FichaApp({ app, onCerrar }) {
               onClick={() => {
                 const equipoId = Number(equipoNuevo);
                 setEquipoNuevo('');
-                tras(api.post('/accesos', { appId: app.id, equipoId }));
+                darAEquipo(equipoId);
               }}
             >
               Agregar
@@ -88,6 +128,11 @@ function FichaApp({ app, onCerrar }) {
 
       <section className={s.fichaSeccion} aria-labelledby="app-personas">
         <h3 id="app-personas">Personas con acceso directo ({directas.length})</h3>
+        {gestionadas > 0 && (
+          <p className={s.sub}>
+            {gestionadas === directas.length ? 'Todas las gestiona' : `${gestionadas} de ellas las gestiona`} {nombreGestor(gestor(directas.find((u) => gestor(u))))}: se crean y se quitan desde esa aplicación.
+          </p>
+        )}
         <BuscarPersona
           personas={ix.datos?.usuarios ?? []}
           excluir={conDirecta}
@@ -110,11 +155,49 @@ function FichaApp({ app, onCerrar }) {
                   <span className={s.sub}>{u.email}{u.activo ? '' : ' · inactiva'}</span>
                 </span>
               </div>
-              <BotonIcono icono={X} etiqueta={`Quitar ${app.nombre} a ${u.nombre}`} onClick={() => tras(api.delete(`/accesos/${ix.directos.get(u.id).get(app.id)}`))} />
+              <span className={s.filaMarcas}>
+                {/* Si todas son gestionadas ya lo dice el encabezado: la marca por fila solo distingue cuando hay mezcla. */}
+                {gestor(u) && gestionadas !== directas.length && <Insignia tono="info">Gestionado por {nombreGestor(gestor(u))}</Insignia>}
+                {sobranIds.has(u.id) && <Insignia tono="aviso">También por equipo</Insignia>}
+                <BotonIcono icono={X} etiqueta={`Quitar ${app.nombre} a ${u.nombre}`} onClick={() => quitarDirecto(u)} />
+              </span>
             </li>
           )}
         />
       </section>
+
+      {quitandoEquipo && <ConfirmarQuitarApp equipo={quitandoEquipo} app={app} onCerrar={() => setQuitandoEquipo(null)} />}
+      {limpieza && <OfrecerLimpieza app={app} lista={limpieza.lista} motivo={limpieza.motivo} onCerrar={() => setLimpieza(null)} />}
+      {quitandoGestionado && (
+        <Modal
+          abierto
+          onCerrar={() => setQuitandoGestionado(null)}
+          icono={Trash2}
+          tono="peligro"
+          titulo={`Quitar ${app.nombre} a ${quitandoGestionado.nombre}`}
+          descripcion={`Este acceso lo gestiona ${nombreGestor(gestor(quitandoGestionado))}.`}
+          pie={
+            <>
+              <Button variante="secundario" onClick={() => setQuitandoGestionado(null)}>Cancelar</Button>
+              <Button
+                variante="peligro"
+                onClick={() => {
+                  const u = quitandoGestionado;
+                  setQuitandoGestionado(null);
+                  tras(api.delete(`/accesos/${accesoDe(u)}`));
+                }}
+              >
+                Quitar de todas formas
+              </Button>
+            </>
+          }
+        >
+          <p>
+            Si la cuenta sigue activa en {nombreGestor(gestor(quitandoGestionado))}, el acceso vuelve a aparecer en su próxima sincronización. Para quitarlo
+            de forma definitiva, desactiva la cuenta en {nombreGestor(gestor(quitandoGestionado))}.
+          </p>
+        </Modal>
+      )}
     </Modal>
   );
 }
@@ -125,11 +208,13 @@ export default function AplicacionesTab() {
 
   const resumen = useMemo(() => {
     if (!ix.datos) return [];
+    const origenes = ix.datos.usuarios.map((u) => [u, ix.origenes(u)]);
     return ix.datos.apps.map((a) => ({
       app: a,
-      personas: ix.datos.usuarios.filter((u) => u.activo && ix.origenes(u).has(a.id)).length,
+      personas: origenes.filter(([u, o]) => u.activo && o.has(a.id)).length,
       equipos: ix.datos.equipos.filter((e) => ix.deEquipo.get(e.id)?.has(a.id)).length,
       directas: ix.datos.usuarios.filter((u) => ix.directos.get(u.id)?.has(a.id)).length,
+      sobran: ix.redundantes(a.id).length,
     }));
   }, [ix]);
 
@@ -142,28 +227,31 @@ export default function AplicacionesTab() {
       <p className={s.sub}>Elige una aplicación para ver quién entra y dar o quitar acceso.</p>
       {ix.error && <Aviso>{ix.error}</Aviso>}
 
-      <div className={s.tarjetas}>
-        {resumen.map(({ app: a, personas, equipos, directas }) => {
+      {/* Mismas filas compactas que Equipos: identidad, proporcion de personas, como llega el acceso y total. */}
+      <div className={s.filasEquipo}>
+        {resumen.map(({ app: a, personas, equipos, directas, sobran }) => {
           const parte = activas ? Math.round((personas / activas) * 100) : 0;
           return (
-            <button key={a.id} type="button" className={`${s.tarjeta} ${s.tarjetaBoton} ${s.tarjetaColor}`} style={{ '--c': colorApp(a) }} onClick={() => setAbierta(a.id)}>
-              <span className={s.tarjetaTitulo}>
-                <IconoApp app={a} tam={20} />
-                <span className={s.tarjetaNombre}>{a.nombre}</span>
-                <ChevronRight size={18} aria-hidden="true" />
+            <button key={a.id} type="button" className={`${s.filaEquipo} ${s.filaApp}`} style={{ '--c': colorApp(a) }} onClick={() => setAbierta(a.id)}>
+              <IconoApp app={a} tam={20} />
+              <span className={s.filaEquipoTexto}>
+                <strong>{a.nombre}</strong>
+                <span className={s.sub}>
+                  {equipos} {equipos === 1 ? 'equipo' : 'equipos'} · {directas} {directas === 1 ? 'acceso directo' : 'accesos directos'}
+                  {sobran > 0 && ` · ${sobran} ${sobran === 1 ? 'sobra' : 'sobran'}`}
+                  {!a.activa && ' · inactiva'}
+                </span>
               </span>
-              {!a.activa && <Insignia tono="aviso">Inactiva</Insignia>}
-              <span className={s.cifra}>
-                {personas} <span className={s.sub}>{personas === 1 ? 'persona activa' : 'personas activas'}</span>
+              <span className={s.filaAppProporcion} role="img" aria-label={`${parte}% de las personas activas`}>
+                <span className={s.proporcion}>
+                  <span style={{ width: `${parte}%` }} />
+                </span>
+                <span className={s.sub}>{parte}% del total</span>
               </span>
-              <span className={s.proporcion} role="img" aria-label={`${parte}% de las personas activas`}>
-                <span style={{ width: `${parte}%` }} />
+              <span className={s.filaEquipoCifra}>
+                <strong>{personas}</strong> {personas === 1 ? 'persona' : 'personas'}
               </span>
-              <span className={s.datosTarjeta}>
-                <span>{parte}% del total</span>
-                <span>{equipos} {equipos === 1 ? 'equipo' : 'equipos'}</span>
-                <span>{directas} {directas === 1 ? 'directo' : 'directos'}</span>
-              </span>
+              <ChevronRight size={18} aria-hidden="true" className={s.filaEquipoFlecha} />
             </button>
           );
         })}

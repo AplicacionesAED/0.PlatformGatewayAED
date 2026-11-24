@@ -415,6 +415,11 @@ describe('portal-auth (HTTP)', () => {
       assert.equal((await c.post('/api/accesos', { appId: cartera, usuarioId: adm.id, equipoId: 1 })).status, 422);
       assert.equal((await c.post('/api/accesos', { appId: 9999, usuarioId: adm.id })).status, 404);
       assert.equal((await c.post('/api/accesos', { appId: cartera, usuarioId: 9999 })).status, 404);
+      // El panel no puede marcar un acceso como gestionado por una app: eso solo lo hace la API de servicio.
+      const r = await c.post('/api/accesos', { appId: cartera, usuarioId: adm.id, gestionadoPor: 'hrsm' });
+      assert.equal((await Acceso.findByPk(r.body.data.id)).gestionado_por, null);
+      const m = await c.get('/api/accesos/matriz');
+      assert.ok('gestionado_por' in m.body.data.accesos[0]);
     });
 
     it('desactivar una app la quita del acceso de todos', async () => {

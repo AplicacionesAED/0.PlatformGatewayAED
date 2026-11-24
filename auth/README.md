@@ -70,6 +70,8 @@ Para que una app dé de alta a su propia gente sin pasar por TI (hoy RR.HH., don
 | `/personas/cambiar-correo` `{ anterior, nuevo, nombre }` | Renombra la cuenta (conserva la contraseña) si es solo de esta app; si no, da de alta el correo nuevo y quita la app al viejo |
 | `/personas/password-temporal` `{ email }` | Contraseña temporal (una sola vez, obliga a cambiarla) |
 
+Los accesos directos que crea quedan con `accesos.gestionado_por = <app>` (los ya existentes de RR.HH. se marcaron en la migración `20261124010000`); los que da un administrador quedan en `NULL`. El panel no ofrece limpiar los gestionados (la app los repondría al sincronizar) y avisa antes de quitarlos a mano.
+
 Límites: solo toca el acceso a su propia app, nunca crea administradores, y nombre, correo o contraseña solo de personas que no son administradoras y no tienen acceso a otra app (ni directo ni por equipo). No reactiva a alguien que TI desactivó. Pruebas: `test/servicio.test.js`.
 
 ## Despliegue (Coolify)

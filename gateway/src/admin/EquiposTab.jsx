@@ -4,6 +4,7 @@ import { api } from '../api/client.js';
 import { Aviso, BotonIcono, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
 import ListaPaginada from './ListaPaginada.jsx';
+import { ConfirmarQuitarApp, OfrecerLimpieza } from './Impacto.jsx';
 
 const textoPersona = (m) => `${m.nombre} ${m.email}`;
 import { fijarMiembros, useAbrirPersona, useDatos } from './datos.jsx';
@@ -72,12 +73,44 @@ function ModalEquipo({ equipo, abierto, onCerrar, onGuardado }) {
   );
 }
 
+// Quien pierde que al eliminar un equipo (lo que tengan directo o por otros equipos lo conservan).
+function ImpactoEliminar({ equipo }) {
+  const ix = useDatos();
+  const filas = ix.impactoEliminarEquipo(equipo);
+  if (filas.length === 0) {
+    return <p>Nadie pierde acceso: {equipo.miembros.length ? 'sus miembros tienen sus aplicaciones por otro camino o el equipo no da ninguna.' : 'el equipo no tiene miembros.'}</p>;
+  }
+  return (
+    <>
+      <p>
+        <strong>{filas.length}</strong> {filas.length === 1 ? 'persona pierde' : 'personas pierden'} aplicaciones que solo les daba este equipo:
+      </p>
+      <ul className={s.resumenPersonas}>
+        {filas.slice(0, 6).map(({ persona, apps }) => (
+          <li key={persona.id}>
+            <Avatar nombre={persona.nombre} />
+            <span>{persona.nombre}</span>
+            <span className={s.miniApps}>
+              {apps.map((a) => (
+                <MiniApp key={a.id} app={a} />
+              ))}
+            </span>
+          </li>
+        ))}
+        {filas.length > 6 && <li className={s.sub}>y {filas.length - 6} más</li>}
+      </ul>
+    </>
+  );
+}
+
 // Todo lo de un equipo: sus aplicaciones y sus miembros (se agregan de a uno con el buscador).
 function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
   const ix = useDatos();
   const abrirPersona = useAbrirPersona();
   const [error, setError] = useState(null);
   const [pendientes, setPendientes] = useState(() => new Set());
+  const [quitandoApp, setQuitandoApp] = useState(null);
+  const [limpieza, setLimpieza] = useState(null); // { app, lista }
 
   async function tras(promesa) {
     setError(null);
@@ -89,15 +122,21 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
     }
   }
 
+  // Quitar una app al equipo pasa por el dialogo de impacto; darla ofrece limpiar los accesos directos que sobren.
   async function alternarApp(app) {
-    const accesoId = ix.deEquipo.get(equipo.id)?.get(app.id);
+    if (ix.deEquipo.get(equipo.id)?.has(app.id)) {
+      setQuitandoApp(app);
+      return;
+    }
+    const lista = ix.redundantes(app.id, equipo);
     setPendientes((x) => new Set(x).add(app.id));
-    await tras(accesoId ? api.delete(`/accesos/${accesoId}`) : api.post('/accesos', { appId: app.id, equipoId: equipo.id }));
+    await tras(api.post('/accesos', { appId: app.id, equipoId: equipo.id }));
     setPendientes((x) => {
       const n = new Set(x);
       n.delete(app.id);
       return n;
     });
+    if (lista.length) setLimpieza({ app, lista });
   }
 
   const ids = equipo.miembros.map((m) => m.id);
@@ -170,6 +209,16 @@ function FichaEquipo({ equipo, onCerrar, onEditar, onEliminar }) {
           }}
         />
       </section>
+
+      {quitandoApp && <ConfirmarQuitarApp equipo={equipo} app={quitandoApp} onCerrar={() => setQuitandoApp(null)} />}
+      {limpieza && (
+        <OfrecerLimpieza
+          app={limpieza.app}
+          lista={limpieza.lista}
+          motivo={`${equipo.nombre} ya da ${limpieza.app.nombre} a ${limpieza.lista.length === 1 ? 'esta persona' : 'estas personas'}.`}
+          onCerrar={() => setLimpieza(null)}
+        />
+      )}
     </Modal>
   );
 }
@@ -280,9 +329,7 @@ export default function EquiposTab() {
           </>
         }
       >
-        <p>
-          Sus {aEliminar?.miembros.length ?? 0} {aEliminar?.miembros.length === 1 ? 'miembro pierde' : 'miembros pierden'} las aplicaciones que este equipo les daba (las que tengan directas o por otros equipos las conservan).
-        </p>
+        {aEliminar && <ImpactoEliminar equipo={aEliminar} />}
       </Modal>
     </section>
   );

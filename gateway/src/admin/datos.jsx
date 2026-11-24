@@ -35,7 +35,51 @@ function indexar({ usuarios, equipos, apps, accesos }) {
   // Apps activas que tiene asignadas (no mira si la persona esta activa).
   const appsDe = (u) => [...origenes(u).values()].map((o) => o.app).filter((a) => a?.activa);
 
-  return { personaPorId, equipoPorId, appPorId, appPorSlug, directos, deEquipo, origenes, appsDe };
+  // App que administra un acceso directo (slug, p. ej. 'hrsm') o null si lo dio un administrador.
+  const gestionPorId = new Map(accesos.map((a) => [a.id, a.gestionado_por ?? null]));
+  const gestionadoPor = (accesoId) => (accesoId ? gestionPorId.get(accesoId) ?? null : null);
+
+  // Que pasa si `equipo` deja de dar `appId`: quien la pierde y quien la conserva (directa o por otro equipo).
+  const impactoQuitarApp = (equipo, appId) => {
+    const pierden = [];
+    const conservan = [];
+    for (const m of equipo.miembros) {
+      const u = personaPorId.get(m.id);
+      if (!u) continue;
+      const o = origenes(u).get(appId);
+      if (o?.accesoId || o?.equipos.some((e) => e.id !== equipo.id)) conservan.push(u);
+      else pierden.push(u);
+    }
+    return { pierden, conservan };
+  };
+
+  // Que pasa si se elimina `equipo`: por persona, las apps que dejaria de tener.
+  const impactoEliminarEquipo = (equipo) => {
+    const porPersona = [];
+    for (const appId of deEquipo.get(equipo.id)?.keys() ?? []) {
+      for (const u of impactoQuitarApp(equipo, appId).pierden) {
+        let fila = porPersona.find((f) => f.persona.id === u.id);
+        if (!fila) porPersona.push((fila = { persona: u, apps: [] }));
+        fila.apps.push(appPorId.get(appId));
+      }
+    }
+    return porPersona;
+  };
+
+  // Accesos directos que sobran: dados a mano (no gestionados por una app) a alguien que ya tiene la app por un equipo.
+  // Con `equipo`, solo entre sus miembros y contando la app que ese equipo va a dar.
+  const redundantes = (appId, equipo = null) => {
+    const lista = [];
+    const candidatos = equipo ? equipo.miembros.map((m) => personaPorId.get(m.id)).filter(Boolean) : usuarios;
+    for (const u of candidatos) {
+      const accesoId = directos.get(u.id)?.get(appId);
+      if (!accesoId || gestionadoPor(accesoId)) continue;
+      if (equipo || origenes(u).get(appId)?.equipos.length) lista.push({ persona: u, accesoId });
+    }
+    return lista;
+  };
+
+  return { personaPorId, equipoPorId, appPorId, appPorSlug, directos, deEquipo, origenes, appsDe, gestionadoPor, impactoQuitarApp, impactoEliminarEquipo, redundantes };
 }
 
 const Contexto = createContext(null);
@@ -75,6 +119,19 @@ export function useAbrirPersona() {
       }),
     [setParams]
   );
+}
+
+// Quita varios accesos (de a uno: el servicio no tiene operacion en lote). Devuelve cuantos fallaron.
+export async function quitarAccesos(ids) {
+  let fallos = 0;
+  for (const id of ids) {
+    try {
+      await api.delete(`/accesos/${id}`);
+    } catch {
+      fallos += 1;
+    }
+  }
+  return fallos;
 }
 
 // Fija los miembros de un equipo (el servicio reemplaza la lista completa con lo que recibe).

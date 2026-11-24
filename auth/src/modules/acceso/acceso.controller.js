@@ -4,7 +4,11 @@ const service = require('./acceso.service');
 const { ctx } = require('../usuario/usuario.controller');
 
 const matriz = asyncHandler(async (req, res) => ok(res, await service.matriz()));
-const conceder = asyncHandler(async (req, res) => created(res, await service.conceder(req.body, ctx(req))));
+// Solo estos campos: `gestionadoPor` lo pone unicamente la API de servicio de una app, nunca el panel.
+const conceder = asyncHandler(async (req, res) => {
+  const { appId, usuarioId, equipoId } = req.body;
+  return created(res, await service.conceder({ appId, usuarioId, equipoId }, ctx(req)));
+});
 const revocar = asyncHandler(async (req, res) => {
   await service.revocar(req.params.id, ctx(req));
   return noContent(res);

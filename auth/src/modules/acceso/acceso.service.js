@@ -30,13 +30,14 @@ async function matriz() {
       order: [['nombre', 'ASC']],
     }),
     Equipo.findAll({ attributes: ['id', 'nombre'], order: [['nombre', 'ASC']] }),
-    Acceso.findAll({ attributes: ['id', 'app_id', 'usuario_id', 'equipo_id'] }),
+    Acceso.findAll({ attributes: ['id', 'app_id', 'usuario_id', 'equipo_id', 'gestionado_por'] }),
   ]);
   return { apps, usuarios, equipos, accesos };
 }
 
-// Idempotente: conceder dos veces lo mismo deja un solo acceso.
-async function conceder({ appId, usuarioId, equipoId }, ctx) {
+// Idempotente: conceder dos veces lo mismo deja un solo acceso. `gestionadoPor` (solo la API de servicio) marca el acceso
+// directo como administrado por esa app; si ya existia uno dado a mano, pasa a ser de la app (ella lo repondria igual).
+async function conceder({ appId, usuarioId, equipoId, gestionadoPor = null }, ctx) {
   const app = await App.findByPk(appId);
   if (!app) throw new ApiError(404, 'La aplicación no existe');
   if (usuarioId != null && !(await Usuario.findByPk(usuarioId))) throw new ApiError(404, 'La persona no existe');
@@ -44,7 +45,11 @@ async function conceder({ appId, usuarioId, equipoId }, ctx) {
 
   const [acceso, creado] = await Acceso.findOrCreate({
     where: { app_id: appId, usuario_id: usuarioId ?? null, equipo_id: equipoId ?? null },
+    defaults: { gestionado_por: usuarioId != null ? gestionadoPor : null },
   });
+  if (!creado && gestionadoPor && usuarioId != null && acceso.gestionado_por !== gestionadoPor) {
+    await acceso.update({ gestionado_por: gestionadoPor });
+  }
   if (creado) {
     await auditoria.registrar({ ...ctx, accion: 'acceso.conceder', entidad: 'acceso', entidadId: acceso.id, detalle: { app: app.slug, usuarioId, equipoId } });
   }

@@ -327,22 +327,22 @@
   }
 }
 
-.lateral .modalCuerpo {
+.lateral > .modalCuerpo {
   height: 100%;
   max-height: 100vh;
 }
 
-.lateral .modalContenido {
+.lateral > .modalCuerpo > .modalContenido {
   flex: 1;
   gap: var(--space-lg);
 }
 
-.lateral .modalPie {
+.lateral > .modalCuerpo > .modalPie {
   border-radius: 0;
 }
 
-/* Cabecera del panel en Azul Profundo con la linea de Gradacion aed debajo. */
-.lateral .modalCabecera {
+/* Cabecera del panel en Azul Profundo con la linea de Gradacion aed debajo. Solo hijos directos: un dialogo abierto dentro del panel no la hereda. */
+.lateral > .modalCuerpo > .modalCabecera {
   border-bottom: 0;
   background:
     linear-gradient(var(--color-brand-deep), var(--color-brand-deep)) top / 100% calc(100% - 3px) no-repeat,
@@ -350,16 +350,16 @@
   color: #fff;
 }
 
-.lateral .modalCabecera .iconBtn {
+.lateral > .modalCuerpo > .modalCabecera .iconBtn {
   color: color-mix(in srgb, #fff 80%, transparent);
 }
 
-.lateral .modalCabecera .iconBtn:hover {
+.lateral > .modalCuerpo > .modalCabecera .iconBtn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
 }
 
-.lateral .modalContenido {
+.lateral > .modalCuerpo > .modalContenido {
   background: var(--color-surface);
 }
 

@@ -10,6 +10,8 @@ const Acceso = sequelize.define(
     app_id: { type: DataTypes.INTEGER, allowNull: false },
     usuario_id: { type: DataTypes.INTEGER, allowNull: true },
     equipo_id: { type: DataTypes.INTEGER, allowNull: true },
+    // NULL = lo dio un administrador; slug de app = lo gestiona esa app por su API de servicio (ver migracion 20261124010000).
+    gestionado_por: { type: DataTypes.STRING(40), allowNull: true },
   },
   { tableName: 'accesos', underscored: true, createdAt: 'creado_en', updatedAt: false }
 );

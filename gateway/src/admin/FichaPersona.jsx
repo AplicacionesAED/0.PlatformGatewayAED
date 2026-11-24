@@ -272,11 +272,19 @@ export default function FichaPersona({ id, onCerrar }) {
                           {!a.activa && <span className={s.sub}>Aplicación inactiva</span>}
                         </span>
                       </label>
-                      {o?.equipos.length > 0 && (
-                        <Insignia tono="info" icono={Users}>
-                          Por {o.equipos.map((e) => e.nombre).join(', ')}
-                        </Insignia>
-                      )}
+                      <span className={s.filaMarcas}>
+                        {/* Directo dado por una app (p. ej. RR.HH.): esa app lo repone al sincronizar. */}
+                        {o?.accesoId && ix.gestionadoPor(o.accesoId) && (
+                          <Insignia>Gestionado por {ix.appPorSlug.get(ix.gestionadoPor(o.accesoId))?.nombre ?? ix.gestionadoPor(o.accesoId)}</Insignia>
+                        )}
+                        {/* Directo dado a mano que sobra: tambien le llega por un equipo. */}
+                        {o?.accesoId && !ix.gestionadoPor(o.accesoId) && o.equipos.length > 0 && <Insignia tono="aviso">Directo redundante</Insignia>}
+                        {o?.equipos.length > 0 && (
+                          <Insignia tono="info" icono={Users}>
+                            Por {o.equipos.map((e) => e.nombre).join(', ')}
+                          </Insignia>
+                        )}
+                      </span>
                     </li>
                   );
                 })}

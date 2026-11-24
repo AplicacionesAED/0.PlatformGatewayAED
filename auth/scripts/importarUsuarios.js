@@ -22,6 +22,8 @@ const APPS = filtro ? filtro.slice(7).split(',').map((s) => s.trim()).filter((s)
 const aplicar = process.argv.includes('--aplicar');
 // Apps cuya contrasena se copia (mismo formato bcrypt que el portal) y la columna donde la guardan.
 const CON_HASH = { hrsm: 'hashed_password' };
+// Apps que administran sus accesos por la API de servicio: sus accesos directos quedan marcados como de la app.
+const CON_SERVICIO = new Set(['hrsm']);
 const esBcrypt = (hash) => typeof hash === 'string' && /^\$2[aby]\$\d{2}\$/.test(hash);
 // Los correos mal escritos en las apps ("gmail,com", espacios...) no se importan: se listan para corregirlos en su app.
 const CORREO_VALIDO = /^[^\s@,]+@[^\s@,]+\.[^\s@,]+$/;
@@ -121,7 +123,11 @@ NO se importan ${invalidos.length} correos con formato invalido (corregirlos en 
       for (const slug of apps) {
         const app = catalogo.get(slug);
         if (!app) continue;
-        const [, creado] = await Acceso.findOrCreate({ where: { app_id: app.id, usuario_id: usuario.id, equipo_id: null }, transaction });
+        const [, creado] = await Acceso.findOrCreate({
+          where: { app_id: app.id, usuario_id: usuario.id, equipo_id: null },
+          defaults: { gestionado_por: CON_SERVICIO.has(slug) ? slug : null },
+          transaction,
+        });
         if (creado) accesosNuevos += 1;
       }
     }

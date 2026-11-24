@@ -57,6 +57,8 @@ describe('API de servicio (RR.HH. da de alta a su gente)', () => {
     assert.equal(ana.password_hash, null);
     assert.equal(ana.es_admin, false);
     assert.deepEqual(await slugsDe('ana@gmail.test'), ['hrsm']);
+    // El acceso queda marcado como gestionado por RR.HH.
+    assert.equal((await Acceso.findOne({ where: { usuario_id: ana.id } })).gestionado_por, 'hrsm');
 
     const otra = await llamar('/personas', { email: 'ana@gmail.test', nombre: 'Ana María' });
     assert.equal(otra.body.data.nuevo, false);
@@ -72,9 +74,13 @@ describe('API de servicio (RR.HH. da de alta a su gente)', () => {
   it('a alguien que ya usa otras apps solo le agrega RR.HH., sin tocar su nombre', async () => {
     const beto = await Usuario.create({ email: 'beto@gmail.test', nombre: 'Beto' });
     await Acceso.create({ app_id: await appId('cartera'), usuario_id: beto.id });
+    // Tenia RR.HH. dado a mano: al registrarlo la app, el acceso pasa a ser gestionado por ella. Cartera sigue siendo manual.
+    await Acceso.create({ app_id: await appId('hrsm'), usuario_id: beto.id });
     await llamar('/personas', { email: 'beto@gmail.test', nombre: 'Otro nombre' });
     assert.equal((await Usuario.findByPk(beto.id)).nombre, 'Beto');
     assert.deepEqual((await slugsDe('beto@gmail.test')).sort(), ['cartera', 'hrsm']);
+    assert.equal((await Acceso.findOne({ where: { usuario_id: beto.id, app_id: await appId('hrsm') } })).gestionado_por, 'hrsm');
+    assert.equal((await Acceso.findOne({ where: { usuario_id: beto.id, app_id: await appId('cartera') } })).gestionado_por, null);
   });
 
   it('genera contraseña temporal solo para personas que son únicamente de RR.HH.', async () => {
