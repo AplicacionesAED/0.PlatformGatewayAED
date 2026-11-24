@@ -246,6 +246,8 @@ describe('portal-auth (HTTP)', () => {
       assert.ok(t.exp - t.iat <= 60 * 60);
 
       assert.equal((await c.get('/api/me')).body.data.suplantadoPor.id, adm.id);
+      const crudo = await fetch(`${base}/api/me`, { headers: { cookie: `${security.ACCESS_COOKIE_NAME}=${c.jar.get(security.ACCESS_COOKIE_NAME)}` } });
+      assert.equal(crudo.headers.get('cache-control'), 'no-store');
       assert.equal((await c.get('/api/usuarios')).status, 403);
       assert.equal((await c.post('/api/auth/suplantar', { usuarioId: ana.id })).status, 403);
       assert.equal((await c.post('/api/auth/cambiar-password', { passwordActual: PASS, passwordNueva: 'Nueva-Clave2@' })).status, 403);
@@ -532,6 +534,9 @@ describe('portal-auth (HTTP)', () => {
       assert.equal(r.status, 200);
       assert.equal(r.body.keys[0].kty, 'RSA');
       assert.equal(r.body.keys[0].d, undefined);
+      // Las apps pueden guardarla un rato; el resto de la API nunca se guarda en cache.
+      const crudo = await fetch(`${base}/api/.well-known/jwks.json`);
+      assert.equal(crudo.headers.get('cache-control'), 'public, max-age=300');
     });
   });
 });

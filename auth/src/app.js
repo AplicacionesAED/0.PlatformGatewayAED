@@ -19,7 +19,12 @@ app.use(cookieParser());
 app.use(express.json());
 
 app.get('/health', (req, res) => res.json({ ok: true }));
-// Todo bajo /api, igual que el resto de la familia.
+// Todo bajo /api, igual que el resto de la familia. Las respuestas traen datos de la sesion (quien soy, quien suplanta):
+// nunca se guardan en cache. El JWKS pone su propio Cache-Control encima.
+app.use('/api', (req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  next();
+});
 app.use('/api', routes);
 
 app.use(notFoundHandler);

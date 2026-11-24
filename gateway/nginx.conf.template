@@ -45,6 +45,12 @@ server {
         # encontrado probando esto en serio, no una suposicion. try_files
         # sirve el archivo DENTRO de este mismo location, sin ese problema.
         try_files /index.html =404;
+        # El index.html nombra los assets con hash de cada build: si el navegador lo reusara de su cache (solo con
+        # Last-Modified lo hace por heuristica) cargaria el JavaScript de un deploy anterior. Bug real 2026-11-24: tras
+        # "entrar como otra persona" la franja de regreso no salia hasta recargar. no-cache = revalidar siempre (304 barato).
+        # add_header en un location anula los heredados del server: por eso se vuelven a incluir las cabeceras de seguridad.
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/snippets/security-headers.conf;
     }
 
     # Estaticos de la landing (build de Vite: /assets/*, logo, favicon).
@@ -66,6 +72,9 @@ server {
     location ~ ^/(login|cambiar-password|admin)(/|$) {
         root /usr/share/nginx/html;
         try_files /index.html =404;
+        # Mismo motivo que en "location = /": el index.html siempre se revalida.
+        add_header Cache-Control "no-cache" always;
+        include /etc/nginx/snippets/security-headers.conf;
     }
 
     # --- Login global del portal (servicio portal-auth, carpeta auth/) ---
