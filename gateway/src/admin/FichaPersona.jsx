@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Copy, KeyRound, LogIn, Plus, Power, ShieldCheck, ShieldOff, Users, X } from 'lucide-react';
 import { api } from '../api/client.js';
+import { nombrePropio } from '../nombrePropio.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, BotonIcono, Button, Cargando, Insignia, Modal } from '../components/ui.jsx';
 import { ACCIONES, describir } from './auditoriaTexto.js';
@@ -129,7 +130,7 @@ function Actividad({ persona, version }) {
               <span className={s.actividadFecha}>{formatoFecha(f.creado_en)}</span>
               <span>
                 <strong>{ACCIONES[f.accion] ?? f.accion}</strong>
-                {f.actor_id && f.actor_id !== persona.id && f.actor && <> por {f.actor.nombre}</>}
+                {f.actor_id && f.actor_id !== persona.id && f.actor && <> por {nombrePropio(f.actor.nombre)}</>}
               </span>
               {describir(f, ix) && <span className={s.sub}>{describir(f, ix)}</span>}
             </li>

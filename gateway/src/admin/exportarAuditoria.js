@@ -1,6 +1,7 @@
 // Exporta a Excel la auditoria con los filtros puestos, tal como se lee en pantalla (nombres en vez de ids). exceljs se
 // carga solo al exportar, para no engordar el panel.
 import { api } from '../api/client.js';
+import { nombrePropio } from '../nombrePropio.js';
 import { ACCIONES, describir } from './auditoriaTexto.js';
 
 const POR_PAGINA = 1000;
@@ -52,7 +53,7 @@ export async function exportarAuditoria({ accion, usuario, desde, hasta }, ix, p
     const fecha = new Date(new Date(f.creado_en).getTime() - 5 * 60 * 60 * 1000);
     hoja.addRow({
       fecha,
-      quien: f.actor?.nombre ?? '',
+      quien: nombrePropio(f.actor?.nombre) ?? '',
       correo: f.actor?.email ?? f.detalle?.email ?? '',
       accion: ACCIONES[f.accion] ?? f.accion,
       detalle: describir(f, ix),

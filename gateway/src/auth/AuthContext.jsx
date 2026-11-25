@@ -1,11 +1,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, ApiError } from '../api/client.js';
+import { nombrePropio } from '../nombrePropio.js';
 
 // Interruptor de despliegue: mientras el servicio de login (auth/) y el gateway no esten publicados, el portal se construye
 // SIN login (VITE_PORTAL_AUTH distinto de "true") y se comporta exactamente como antes: sin sesion y con todas las tarjetas.
 export const AUTH_ACTIVA = import.meta.env.VITE_PORTAL_AUTH === 'true';
 
 const AuthContext = createContext(null);
+
+const conNombres = (u) =>
+  u && { ...u, nombre: nombrePropio(u.nombre), ...(u.suplantadoPor && { suplantadoPor: { ...u.suplantadoPor, nombre: nombrePropio(u.suplantadoPor.nombre) } }) };
 
 // Estado de la sesion: { cargando, usuario, errorConexion }. El usuario solo se borra con un 401 real; si el servidor no
 // responde (un despliegue, red caida) NO se manda a la persona al login: se avisa y se puede reintentar.
@@ -14,7 +18,7 @@ export function AuthProvider({ children }) {
 
   const cargar = useCallback(async () => {
     try {
-      setEstado({ cargando: false, usuario: await api.get('/me'), errorConexion: false });
+      setEstado({ cargando: false, usuario: conNombres(await api.get('/me')), errorConexion: false });
     } catch (err) {
       const sinSesion = err instanceof ApiError && err.status === 401;
       setEstado({ cargando: false, usuario: null, errorConexion: !sinSesion });
@@ -33,12 +37,12 @@ export function AuthProvider({ children }) {
         return cargar();
       },
       login: async (email, password) => {
-        const usuario = await api.post('/auth/login', { email, password });
+        const usuario = conNombres(await api.post('/auth/login', { email, password }));
         setEstado({ cargando: false, usuario, errorConexion: false });
         return usuario;
       },
       cambiarPassword: async (passwordActual, passwordNueva) => {
-        const usuario = await api.post('/auth/cambiar-password', { passwordActual, passwordNueva });
+        const usuario = conNombres(await api.post('/auth/cambiar-password', { passwordActual, passwordNueva }));
         setEstado({ cargando: false, usuario, errorConexion: false });
         return usuario;
       },

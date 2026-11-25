@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
+import { nombrePropio } from '../nombrePropio.js';
 
 export const normalizar = (t) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 // `q` ya normalizada; vacia coincide con todo.
@@ -114,7 +115,9 @@ export function AdminDatos({ children }) {
 
   const recargar = useCallback(async () => {
     try {
-      const [usuarios, equipos, matriz] = await Promise.all([api.get('/usuarios'), api.get('/equipos'), api.get('/accesos/matriz')]);
+      const [crudos, equiposCrudos, matriz] = await Promise.all([api.get('/usuarios'), api.get('/equipos'), api.get('/accesos/matriz')]);
+      const usuarios = crudos.map((u) => ({ ...u, nombre: nombrePropio(u.nombre) }));
+      const equipos = equiposCrudos.map((e) => ({ ...e, miembros: e.miembros.map((m) => ({ ...m, nombre: nombrePropio(m.nombre) })) }));
       setEstado({ datos: { usuarios, equipos, apps: matriz.apps, accesos: matriz.accesos }, cargando: false, error: null });
     } catch (err) {
       setEstado((anterior) => ({ ...anterior, cargando: false, error: err.message }));

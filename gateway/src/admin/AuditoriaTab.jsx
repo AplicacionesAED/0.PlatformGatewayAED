@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, FileSpreadsheet, X } from 'lucide-react';
 import { api } from '../api/client.js';
+import { nombrePropio } from '../nombrePropio.js';
 import { Aviso, BotonIcono, Button, Cargando } from '../components/ui.jsx';
 import AlertasSeguridad, { BotonAlertas } from './AlertasSeguridad.jsx';
 import BuscarPersona from './BuscarPersona.jsx';
@@ -151,9 +152,9 @@ export default function AuditoriaTab({ alertas }) {
                   <td>
                     {f.actor ? (
                       <div className={s.personaCelda}>
-                        <Avatar nombre={f.actor.nombre} />
+                        <Avatar nombre={nombrePropio(f.actor.nombre)} />
                         <span>
-                          <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(f.actor_id)}>{f.actor.nombre}</button>
+                          <button type="button" className={s.nombreBoton} onClick={() => abrirPersona(f.actor_id)}>{nombrePropio(f.actor.nombre)}</button>
                           <span className={s.sub}>{f.actor.email}</span>
                         </span>
                       </div>
