@@ -336,9 +336,13 @@ export default function PersonasTab() {
     setPagina(1);
   };
   const seleccionadas = personas.filter((p) => seleccion.has(p.id));
-  // Primer clic: sentido inicial de la columna; los siguientes alternan.
+  // Primer clic: sentido inicial de la columna; segundo: el contrario; tercero: vuelve al orden normal (sin ordenar).
   const ordenar = (clave) => {
-    setOrden((o) => (o.clave === clave ? { clave, sentido: o.sentido === 'asc' ? 'desc' : 'asc' } : { clave, sentido: ORDEN[clave].inicial }));
+    setOrden((o) => {
+      if (o.clave !== clave) return { clave, sentido: ORDEN[clave].inicial };
+      if (o.sentido === ORDEN[clave].inicial) return { clave, sentido: o.sentido === 'asc' ? 'desc' : 'asc' };
+      return { clave: null, sentido: 'asc' };
+    });
     setPagina(1);
   };
   const enc = { orden, onOrdenar: ordenar };
