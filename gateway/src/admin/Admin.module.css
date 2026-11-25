@@ -915,6 +915,41 @@ section[aria-label] {
   padding-block: 9px;
 }
 
+.ordenBoton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ordenBoton svg {
+  opacity: 0.45;
+}
+
+.ordenBoton:hover,
+.ordenActivo {
+  color: var(--color-ink);
+}
+
+.ordenBoton:hover svg,
+.ordenActivo svg {
+  opacity: 1;
+}
+
+.ordenBoton:focus-visible {
+  outline: 2px solid var(--color-brand-deep);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 .tablaCompacta .avatar {
   width: 28px;
   height: 28px;

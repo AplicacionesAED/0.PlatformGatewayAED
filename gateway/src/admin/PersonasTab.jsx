@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, KeyRound, Power, Search, ShieldCheck, UserPlus, Users, AppWindow, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, ArrowUpDown, ChevronLeft, ChevronRight, KeyRound, Power, Search, ShieldCheck, UserPlus, Users, AppWindow, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { useAuth } from '../auth/AuthContext.jsx';
 import { Aviso, Button, Campo, Cargando, Modal } from '../components/ui.jsx';
@@ -99,6 +99,30 @@ function ModalNueva({ abierto, onCerrar, onCreada }) {
 }
 
 const POR_PAGINA = 50;
+
+// Columnas ordenables: valor a comparar y sentido del primer clic (fechas y conteos, de mayor a menor). Los vacios
+// (p. ej. nunca ha entrado) van siempre al final.
+const texto = (a, b) => a.localeCompare(b, 'es', { sensitivity: 'base' });
+const ORDEN = {
+  nombre: { valor: (p) => p.nombre, comparar: texto, inicial: 'asc' },
+  estado: { valor: (p) => (p.activo ? 0 : 2) + (p.esAdmin ? 0 : 1), comparar: (a, b) => a - b, inicial: 'asc' },
+  ingreso: { valor: (p) => (p.corporativo ? 'Microsoft' : !p.tienePassword ? 'Sin contraseña' : p.debeCambiarPassword ? 'Contraseña temporal' : 'Contraseña'), comparar: texto, inicial: 'asc' },
+  apps: { valor: (p, ix) => ix.appsDe(p).length, comparar: (a, b) => a - b, inicial: 'desc' },
+  actividad: { valor: (p) => (p.ultimaActividad ? Date.parse(p.ultimaActividad) : null), comparar: (a, b) => a - b, inicial: 'desc' },
+};
+
+function Encabezado({ clave, orden, onOrdenar, children }) {
+  const activa = orden.clave === clave;
+  const Icono = !activa ? ArrowUpDown : orden.sentido === 'asc' ? ArrowUp : ArrowDown;
+  return (
+    <th scope="col" aria-sort={activa ? (orden.sentido === 'asc' ? 'ascending' : 'descending') : undefined}>
+      <button type="button" className={`${s.ordenBoton} ${activa ? s.ordenActivo : ''}`} onClick={() => onOrdenar(clave)}>
+        {children}
+        <Icono size={13} aria-hidden="true" />
+      </button>
+    </th>
+  );
+}
 
 const LOTE = {
   equipo: { titulo: 'Agregar a un equipo', boton: 'Agregar', icono: Users },
@@ -227,6 +251,7 @@ export default function PersonasTab() {
   const [avisoLote, setAvisoLote] = useState(null);
   const [appFiltro, setAppFiltro] = useState('');
   const [pagina, setPagina] = useState(1);
+  const [orden, setOrden] = useState({ clave: null, sentido: 'asc' });
 
   const personas = ix.datos?.usuarios ?? [];
 
@@ -258,8 +283,19 @@ export default function PersonasTab() {
     const fn = filtros.find((f) => f.clave === filtro)?.fn ?? (() => true);
     // Filtro por aplicacion: quien la tiene asignada por cualquier camino (directo o equipo).
     const conApp = appFiltro ? (u) => ix.origenes(u).has(Number(appFiltro)) : () => true;
-    return personas.filter((u) => fn(u) && conApp(u) && coincide(q, u.nombre, u.email));
-  }, [personas, busqueda, filtro, filtros, appFiltro, ix]);
+    const lista = personas.filter((u) => fn(u) && conApp(u) && coincide(q, u.nombre, u.email));
+    const col = ORDEN[orden.clave];
+    if (!col) return lista;
+    const signo = orden.sentido === 'asc' ? 1 : -1;
+    // Desempate por nombre para que el orden no salte al recargar.
+    return lista
+      .map((p) => ({ p, v: col.valor(p, ix) }))
+      .sort((a, b) => {
+        if (a.v == null || b.v == null) return a.v == null ? (b.v == null ? 0 : 1) : -1;
+        return signo * col.comparar(a.v, b.v) || texto(a.p.nombre, b.p.nombre);
+      })
+      .map((x) => x.p);
+  }, [personas, busqueda, filtro, filtros, appFiltro, ix, orden]);
 
   if (ix.cargando && !ix.datos) return <Cargando />;
 
@@ -300,6 +336,12 @@ export default function PersonasTab() {
     setPagina(1);
   };
   const seleccionadas = personas.filter((p) => seleccion.has(p.id));
+  // Primer clic: sentido inicial de la columna; los siguientes alternan.
+  const ordenar = (clave) => {
+    setOrden((o) => (o.clave === clave ? { clave, sentido: o.sentido === 'asc' ? 'desc' : 'asc' } : { clave, sentido: ORDEN[clave].inicial }));
+    setPagina(1);
+  };
+  const enc = { orden, onOrdenar: ordenar };
 
   return (
     <section aria-label="Personas">
@@ -353,11 +395,11 @@ export default function PersonasTab() {
               <th scope="col" className={s.celdaMarca}>
                 <input type="checkbox" checked={todasMarcadas} onChange={alternarTodas} aria-label="Seleccionar las personas de esta página" />
               </th>
-              <th scope="col">Persona</th>
-              <th scope="col">Estado</th>
-              <th scope="col">Ingreso con</th>
-              <th scope="col">Aplicaciones</th>
-              <th scope="col">Última actividad</th>
+              <Encabezado clave="nombre" {...enc}>Persona</Encabezado>
+              <Encabezado clave="estado" {...enc}>Estado</Encabezado>
+              <Encabezado clave="ingreso" {...enc}>Ingreso con</Encabezado>
+              <Encabezado clave="apps" {...enc}>Aplicaciones</Encabezado>
+              <Encabezado clave="actividad" {...enc}>Última actividad</Encabezado>
               <th scope="col"><span className={s.soloLectores}>Abrir</span></th>
             </tr>
           </thead>
